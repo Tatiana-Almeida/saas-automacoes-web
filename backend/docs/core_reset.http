@@ -1,0 +1,21 @@
+# Core: Throttle Status + Daily Reset
+
+### Get throttle status (admin)
+GET http://localhost:8000/api/v1/core/throttle/status
+Authorization: Bearer {{access}}
+
+### Reset daily counters for specific categories (requires manage_tenants)
+POST http://localhost:8000/api/v1/core/throttle/daily/reset
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{
+  "categories": ["send_whatsapp", "send_email"]
+}
+
+### Reset all categories defined by the tenant plan
+POST http://localhost:8000/api/v1/core/throttle/daily/reset
+Authorization: Bearer {{access}}
+Content-Type: application/json
+
+{}

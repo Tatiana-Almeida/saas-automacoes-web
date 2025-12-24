@@ -1,0 +1,52 @@
+@baseUrl = http://localhost:8000
+@domain = acme.localhost
+@access = REPLACE_WITH_ACCESS_TOKEN
+
+### Login (Cookie HttpOnly também é suportado)
+POST {{baseUrl}}/api/v1/auth/token
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "Test123!"
+}
+
+### Listar roles de um usuário (perm: view_users)
+GET {{baseUrl}}/api/v1/rbac/users/42/roles
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+### Atribuir role (perm: manage_users)
+POST {{baseUrl}}/api/v1/rbac/users/42/roles/assign
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "role": "Viewer"
+}
+
+### Listar permissões de um usuário (perm: view_users)
+GET {{baseUrl}}/api/v1/rbac/users/42/permissions
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+### Conceder permissão (perm: manage_users)
+POST {{baseUrl}}/api/v1/rbac/users/42/permissions/assign
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "permission": "send_whatsapp"
+}
+
+### Revogar permissão (perm: manage_users)
+POST {{baseUrl}}/api/v1/rbac/users/42/permissions/revoke
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "permission": "send_whatsapp"
+}

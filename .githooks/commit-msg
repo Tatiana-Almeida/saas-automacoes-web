@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Portable fallback commit-msg hook using Node validator
+node tools/commit-msg.js "$1"

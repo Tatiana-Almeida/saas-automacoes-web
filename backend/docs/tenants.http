@@ -1,0 +1,41 @@
+@host = http://localhost:8000
+@token = {{JWT_ADMIN_TOKEN}}
+
+### Create tenant
+POST {{host}}/api/v1/tenants
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Acme Corp",
+  "schema_name": "acme",
+  "domain": "acme.local",
+  "plan": "pro"
+}
+
+### Suspend tenant
+POST {{host}}/api/v1/tenants/{{tenant_id}}/actions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "action": "suspend"
+}
+
+### Reactivate tenant
+POST {{host}}/api/v1/tenants/{{tenant_id}}/actions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "action": "reactivate"
+}
+
+### Update tenant plan
+POST {{host}}/api/v1/tenants/{{tenant_id}}/plan
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "plan": "pro"
+}

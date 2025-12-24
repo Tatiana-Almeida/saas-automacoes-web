@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Try commitlint if available; fallback to custom validator
+if command -v npx >/dev/null 2>&1; then
+  npx --no-install commitlint --edit "$1" || node tools/commit-msg.js "$1"
+else
+  node tools/commit-msg.js "$1"
+fi

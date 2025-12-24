@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>SaaS Automations — Landing</title>
+    <meta name="description" content="SaaS de automações web — envie mensagens, workflows e integrações.">
+    <meta name="robots" content="index,follow">
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:0;color:#222}
+      .hero{padding:40px;text-align:center;background:#f5f7fb}
+      .container{max-width:960px;margin:0 auto;padding:20px}
+      .cta{display:inline-block;padding:12px 20px;background:#0066ff;color:#fff;border-radius:6px;text-decoration:none}
+      form{max-width:600px;margin:20px auto}
+      input,textarea{width:100%;padding:8px;margin:4px 0;border:1px solid #ccc;border-radius:4px}
+    </style>
+    <!-- Google Analytics (GA4) -->
+    {% if GA_TRACKING_ID %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_TRACKING_ID }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);} 
+      gtag('js', new Date());
+      gtag('config', '{{ GA_TRACKING_ID }}');
+    </script>
+    {% else %}
+    <!-- GA not configured -->
+    {% endif %}
+  </head>
+  <body>
+    <div class="hero">
+      <div class="container">
+        <h1>SaaS de Automações Web</h1>
+        <p>Automatize mensagens, workflows e integrações com uma plataforma multi-tenant pronta para produção.</p>
+        <p><a class="cta" href="#contact">Teste Grátis</a></p>
+      </div>
+    </div>
+    <div class="container">
+      <h2>Planos</h2>
+      <p>Free, Pro, Enterprise — preços e limites configuráveis.</p>
+
+      <h2 id="contact">Fale Conosco</h2>
+      <form id="contactForm">
+        <input type="email" id="email" placeholder="Seu e-mail" required>
+        <input type="text" id="subject" placeholder="Assunto" required>
+        <textarea id="message" rows="6" placeholder="Sua mensagem" required></textarea>
+        <button type="submit">Enviar</button>
+      </form>
+      <div id="contactResult" style="display:none;padding:10px;border-radius:4px;margin-top:8px"></div>
+    </div>
+    <script>
+      const form = document.getElementById('contactForm');
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const payload = { email: document.getElementById('email').value, subject: document.getElementById('subject').value, message: document.getElementById('message').value };
+        const res = await fetch('/api/v1/support/tickets/', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const el = document.getElementById('contactResult');
+        if (res.ok) {
+          el.style.display='block'; el.style.background='#e6ffed'; el.innerText = 'Mensagem enviada! Obrigado.'; form.reset();
+          try { if (window.gtag) { gtag('event','support_ticket',{method:'landing_form'}); } } catch(e){console.warn(e)}
+        } else { el.style.display='block'; el.style.background='#ffe6e6'; el.innerText = 'Erro ao enviar. Tente novamente.'; }
+      });
+    </script>
+  </body>
+</html>

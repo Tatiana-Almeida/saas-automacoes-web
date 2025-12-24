@@ -1,0 +1,48 @@
+version: v1.28.0
+ignore:
+  javascript/reDOS:
+    - '*':
+        reason: Third-party regex parsing in node_modules; handled via SCA and dependency updates.
+        expires: '2026-12-31T00:00:00.000Z'
+        path: backend-node/node_modules/**
+    - '*':
+      reason: Global node_modules path coverage for monorepos.
+      expires: '2026-12-31T00:00:00.000Z'
+      path: '**/node_modules/**'
+    - '*':
+      reason: Specific router file affected; third-party transitive.
+      expires: '2026-12-31T00:00:00.000Z'
+      path: backend-node/node_modules/router/index.js
+  javascript/HardcodedNonCryptoSecret:
+    - '*':
+        reason: Third-party implementation detail in node_modules; not first-party secret.
+        expires: '2026-12-31T00:00:00.000Z'
+        path: backend-node/node_modules/**
+    - '*':
+      reason: Global node_modules path coverage for monorepos.
+      expires: '2026-12-31T00:00:00.000Z'
+      path: '**/node_modules/**'
+    - '*':
+      reason: Specific jwa file from jsonwebtoken; third-party transitive.
+      expires: '2026-12-31T00:00:00.000Z'
+      path: backend-node/node_modules/jwa/index.js
+  javascript/HttpToHttps:
+    - '*':
+        reason: Node core/express defaults within node_modules; HTTPS enforced in deployment configuration.
+        expires: '2026-12-31T00:00:00.000Z'
+        path: backend-node/node_modules/**
+  javascript/InsecureHash:
+    - '*':
+        reason: Third-party etag hashing; not used for passwords or secrets.
+        expires: '2026-12-31T00:00:00.000Z'
+        path: backend-node/node_modules/**
+  python/NoHardcodedCredentials/test:
+    - '*':
+        reason: Test-only credentials; being migrated to centralized helper/env.
+        expires: '2026-06-30T00:00:00.000Z'
+        path: backend/tests/**
+  python/NoHardcodedPasswords/test:
+    - '*':
+        reason: Test-only passwords; being migrated to centralized helper/env.
+        expires: '2026-06-30T00:00:00.000Z'
+        path: backend/tests/**

@@ -1,0 +1,61 @@
+# Environment files
+.env
+.env.*
+*.env
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Virtual environments
+venv/
+env/
+.python-version
+
+# Django database (default)
+db.sqlite3
+
+# Django uploads
+media/
+
+# Logs
+logs/
+*.log
+
+# Django static
+staticfiles/
+static_root/
+static_collected/
+
+# VS Code
+.vscode/
+
+# Test & coverage
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+.cache/
+
+# IDE & OS files
+.idea/
+.DS_Store
+
+# Local settings (optional common pattern)
+local_settings.py
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.github/instructions/snyk_rules.instructions.md

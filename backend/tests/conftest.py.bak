@@ -1,0 +1,238 @@
+import os
+import pytest
+
+
+def pytest_ignore_collect(collection_path):
+    # Minimal ignore hook to avoid importing heavy tenant tests under SQLite
+    using_settings_test = os.environ.get('DJANGO_SETTINGS_MODULE', '').endswith('settings_test')
+    if not using_settings_test:
+        return False
+    p = str(collection_path)
+    skip_names = ('test_rbac', 'test_tenant', 'test_plan_', 'test_daily_')
+    return any(name in p for name in skip_names)
+
+
+# Keep the rest of heavy fixtures simple and robust; they will try to
+# enable DB access only when running against Postgres-backed settings.
+if os.environ.get('DJANGO_SETTINGS_MODULE', '').endswith('settings_test_pg'):
+    @pytest.fixture(autouse=True)
+    def _enable_db(db):
+        try:
+            from django.db import connection
+            connection.set_schema_to_public()
+        except Exception:
+            pass
+        return
+
+import os
+import secrets
+import string
+import pytest
+
+
+def pytest_ignore_collect(path):
+    """
+    Skip tenant/RBAC tests when running under the SQLite-based test settings.
+    This avoids importing apps that require Postgres/django_tenants in this environment.
+    """
+    # Detect if we're using the lightweight SQLite test settings
+    using_settings_test = os.environ.get('DJANGO_SETTINGS_MODULE', '').endswith('settings_test')
+    if using_settings_test:
+        p = str(path)
+        patterns = (
+            'test_auditing_middleware.py',
+            'test_daily_reset.py',
+            'test_daily_smoke_summary.py',
+            'test_daily_summary.py',
+            'test_daily_summary_percent.py',
+            'test_daily_summary_threshold.py',
+            'test_plan_limits.py',
+            'test_plan_limits_services.py',
+            'test_plan_ref_override.py',
+            'test_rbac.py',
+            'test_rbac_audit_actions.py',
+            'test_rbac_bulk_api.py',
+            'test_rbac_endpoints.py',
+            'test_rbac_user_permissions.py',
+            'test_reset_daily_counters_command.py',
+            'test_service_permissions.py',
+            'test_tenant_plan_change.py',
+            'test_tenant_plan_detail.py',
+            'test_events.py',
+        )
+        for name in patterns:
+            if p.endswith(name):
+                return True
+    return False
+
+
+def _random_password(length: int = 16) -> str:
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+@pytest.fixture(scope="session")
+def gen_password():
+    def _gen() -> str:
+        env = os.getenv("TEST_PASSWORD")
+        return env if env else _random_password()
+    return _gen
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip tenant/RBAC-dependent tests when running under SQLite test settings.
+
+    These tests rely on django-tenants/Postgres features and won't run under the
+    minimal SQLite-based test configuration used for focused unit testing.
+    """
+    try:
+        from django.conf import settings
+        engine = settings.DATABASES.get('default', {}).get('ENGINE', '')
+    except Exception:
+        engine = ''
+    if 'sqlite' in engine:
+        skip = pytest.mark.skip(reason="Skipped under SQLite test settings; requires Postgres tenants backend")
+        patterns = (
+            'test_auditing_middleware.py',
+            'test_daily_',
+            'test_plan_',
+            'test_rbac',
+            'test_reset_daily_counters_command.py',
+            'test_service_permissions.py',
+            'test_tenant_',
+        )
+        for item in items:
+            fspath = str(getattr(item, 'fspath', ''))
+            if any(p in fspath for p in patterns):
+                item.add_marker(skip)
+
+
+# When running the Postgres-backed test settings, django-tenants middleware
+# will attempt DB access during request processing. pytest-django blocks DB
+# access unless tests request it via the `db` or `transactional_db` fixtures.
+# Enable DB access automatically for all tests when using the Postgres test
+# settings so middleware-dependent tests can exercise request/response flows.
+if os.environ.get('DJANGO_SETTINGS_MODULE', '').endswith('settings_test_pg'):
+    @pytest.fixture(autouse=True)
+    def _enable_db(db):
+        try:
+            from django.db import connection
+            connection.set_schema_to_public()
+        except Exception:
+            pass
+        return
+
+
+# For general test runs using a Postgres-backed settings module, some tests
+# use the Django test `client`, which triggers middleware that queries the DB
+# (e.g. django-tenants). pytest-django blocks DB access unless requested; to
+# avoid editing dozens of tests we enable the DB lazily when a test declares
+# the `client` fixture.
+@pytest.fixture(autouse=True)
+def _enable_db_for_client(request):
+    if "client" in getattr(request, "fixturenames", []):
+        request.getfixturevalue("db")
+
+
+# Ensure each test begins with the public schema active. This prevents
+# "Can't create tenant outside the public schema" when tests call
+# `Tenant.objects.create(...)` while the connection is still in a
+# tenant schema from a previous test.
+@pytest.fixture(autouse=True)
+def _ensure_public_schema_per_test(request, django_db_blocker):
+    using_settings_test = os.environ.get('DJANGO_SETTINGS_MODULE', '').endswith('settings_test')
+    if using_settings_test:
+        return
+    with django_db_blocker.unblock():
+        try:
+            from django.db import connection
+            connection.set_schema_to_public()
+        except Exception:
+            pass
+
+
+# Clear Django cache (Redis) before and after each test to isolate
+# throttling and daily counters that rely on cache keys.
+@pytest.fixture(autouse=True)
+def _clear_cache_between_tests():
+    try:
+        from django.core.cache import cache
+        cache.clear()
+    except Exception:
+        pass
+    yield
+    try:
+        from django.core.cache import cache
+        cache.clear()
+    except Exception:
+        pass
+
+
+@pytest.fixture(autouse=True, scope='session')
+def _ensure_test_tenant(django_db_setup, django_db_blocker):
+    """Create a lightweight tenant + domain for the testserver hostname.
+
+    The django-tenants middleware looks up the Domain for the request hostname
+    and will 404 if none exists. Creating this entry ensures tests that use
+    the test client (hostname `testserver`) resolve to a tenant.
+    """
+    with django_db_blocker.unblock():
+        try:
+            from django.db import connection
+            connection.set_schema_to_public()
+            from apps.tenants.models import Tenant, Domain
+        except Exception:
+            return
+        if not Domain.objects.filter(domain='testserver').exists():
+            tenant = Tenant(schema_name='test_tenant', name='Test Tenant', plan='free')
+            tenant.save()
+            Domain.objects.create(domain='testserver', tenant=tenant)
+    return
+
+
+# Ensure a lightweight tenant/domain exists for the test client hostname when
+# running against a Postgres-backed settings module (not the SQLite test harness).
+@pytest.fixture(autouse=True, scope='session')
+def _ensure_test_tenant_general(django_db_setup, django_db_blocker):
+    using_settings_test = os.environ.get('DJANGO_SETTINGS_MODULE', '').endswith('settings_test')
+    if using_settings_test:
+        return
+    with django_db_blocker.unblock():
+        try:
+            from django.db import connection
+            connection.set_schema_to_public()
+            from apps.tenants.models import Tenant, Domain
+        except Exception:
+            return
+        if not Domain.objects.filter(domain='testserver').exists():
+            tenant = Tenant(schema_name='test_tenant', name='Test Tenant', plan='free')
+            tenant.save()
+            Domain.objects.create(domain='testserver', tenant=tenant)
+            try:
+                connection.set_schema_to_public()
+            except Exception:
+                pass
+    return
+    # (truncated duplicate content removed)
+            # running against a Postgres-backed settings module (not the SQLite test harness).
+            @pytest.fixture(autouse=True, scope='session')
+            def _ensure_test_tenant_general(django_db_setup, django_db_blocker):
+                using_settings_test = os.environ.get('DJANGO_SETTINGS_MODULE', '').endswith('settings_test')
+                if using_settings_test:
+                    return
+                with django_db_blocker.unblock():
+                    try:
+                        from django.db import connection
+                        connection.set_schema_to_public()
+                        from apps.tenants.models import Tenant, Domain
+                    except Exception:
+                        return
+                    if not Domain.objects.filter(domain='testserver').exists():
+                        tenant = Tenant(schema_name='test_tenant', name='Test Tenant', plan='free')
+                        tenant.save()
+                        Domain.objects.create(domain='testserver', tenant=tenant)
+                        try:
+                            connection.set_schema_to_public()
+                        except Exception:
+                            pass
+                return

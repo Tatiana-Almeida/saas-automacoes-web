@@ -1,0 +1,49 @@
+name: PR OpenAPI Comment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Post PR comment with docs and OpenAPI info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = context.repo;
+            const prNumber = context.issue.number;
+            const docsPath = 'docs/api/index.html';
+            const openapiWorkflow = '.github/workflows/openapi.yml';
+            const publishWorkflow = '.github/workflows/publish-openapi.yml';
+            const releaseWorkflow = '.github/workflows/release-openapi.yml';
+            const pagesUrl = `https://${repo.owner}.github.io/${repo.repo}/api/index.html`;
+            const message = [
+              'API docs & OpenAPI details for this PR:',
+              '',
+              `- Docs viewer (ReDoc): ${docsPath}`,
+              `- GitHub Pages (if published): ${pagesUrl}`,
+              `- OpenAPI build: ${openapiWorkflow}`,
+              `- Docs publish (Pages): ${publishWorkflow}`,
+              `- Release asset upload: ${releaseWorkflow}`,
+              '',
+              'Local preview commands:',
+              '```powershell',
+              'cd backend',
+              'cp .env.example .env',
+              'docker compose up -d --build',
+              'make openapi',
+              '```',
+              '',
+              'Then open docs/api/index.html to view ReDoc. On release, backend/openapi.yaml is attached as an asset.'
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: repo.owner,
+              repo: repo.repo,
+              issue_number: prNumber,
+              body: message
+            });

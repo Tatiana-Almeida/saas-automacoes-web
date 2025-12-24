@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; object-src 'none'">
+    <title>SaaS Automacoes</title>
+  </head>
+  <body style="font-family: system-ui, Arial, sans-serif; padding: 24px;">
+    <h1>SaaS Automacoes</h1>
+    <p>API Health: <b id="status">...</b></p>
+    <p id="error" style="color:red; display:none"></p>
+    <small>Servidor: http://127.0.0.1:3001</small>
+    <script>
+      fetch('/api/v1/health')
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(data => { document.getElementById('status').textContent = data.status; })
+        .catch(e => { const el = document.getElementById('error'); el.textContent = 'Erro: ' + e.message; el.style.display='block'; });
+    </script>
+  </body>
+</html>

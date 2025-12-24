@@ -1,0 +1,30 @@
+@baseUrl = http://localhost:8000
+@domain = acme.localhost
+# Substitua por um token válido se usar Authorization em vez de Cookie
+@access = REPLACE_WITH_ACCESS_TOKEN
+
+### Login (retorna access; cookie HttpOnly pode ser usado)
+POST {{baseUrl}}/api/v1/auth/token
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "Test123!"
+}
+
+### Bulk RBAC apply (perm: manage_users; escopo por tenant via Host)
+POST {{baseUrl}}/api/v1/rbac/bulk/apply
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "assign": {
+    "roles": [ { "username": "u1", "role": "Viewer" } ],
+    "permissions": [ { "username": "u1", "permission": "send_sms" } ]
+  },
+  "revoke": {
+    "roles": [ { "username": "u2", "role": "Operator" } ],
+    "permissions": [ { "username": "u3", "permission": "email_send" } ]
+  }
+}

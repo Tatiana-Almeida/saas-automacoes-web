@@ -1,0 +1,128 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: saas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DEBUG: "True"
+      SECRET_KEY: dev-secret-change-me
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/saas
+      REDIS_URL: redis://redis:6379/1
+      TENANT_DEFAULT_SCHEMA_NAME: public
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./backend:/code
+    command: ["sh", "-c", "python manage.py migrate_schemas --shared && python manage.py runserver 0.0.0.0:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DEBUG: "True"
+      SECRET_KEY: dev-secret-change-me
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/saas
+      REDIS_URL: redis://redis:6379/1
+      TENANT_DEFAULT_SCHEMA_NAME: public
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/code
+    command: ["celery", "-A", "saas_backend", "worker", "--loglevel=info"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A saas_backend inspect ping -d celery@$(hostname) -t 5 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DEBUG: "True"
+      SECRET_KEY: dev-secret-change-me
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/saas
+      REDIS_URL: redis://redis:6379/1
+      TENANT_DEFAULT_SCHEMA_NAME: public
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/code
+    command: ["celery", "-A", "saas_backend", "beat", "--loglevel=info"]
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep 'celery beat' | grep -v grep"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      # Vite proxy forwards /api to this URL
+      API_URL: http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  flower:
+    image: mher/flower:1.2.0
+    environment:
+      FLOWER_PORT: 5555
+      CELERY_BROKER_URL: redis://redis:6379/1
+    depends_on:
+      - redis
+      - celery
+    ports:
+      - "5555:5555"
+
+volumes:
+  pgdata:

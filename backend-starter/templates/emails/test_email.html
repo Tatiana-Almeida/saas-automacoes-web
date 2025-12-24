@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email de teste</title>
+  <style>
+    body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #222; }
+    .container { max-width: 560px; margin: 0 auto; padding: 24px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Email de teste</h2>
+    <p>{{ body }}</p>
+    <hr />
+    <p>Obrigado,<br/>Equipe {{ site_name|default:"SaaS" }}</p>
+  </div>
+</body>
+</html>

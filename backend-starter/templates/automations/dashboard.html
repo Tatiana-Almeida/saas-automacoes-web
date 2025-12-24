@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Minhas Automações</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; }
+      h1 { margin-bottom: 1rem; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; }
+      th { background: #f3f4f6; text-align: left; }
+      .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+      .ok { background: #d1fae5; color: #065f46; }
+      .warn { background: #fee2e2; color: #991b1b; }
+      .muted { color: #6b7280; font-size: 12px; }
+      .actions { display: flex; gap: 8px; }
+      button { padding: 6px 10px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <h1>Minhas Automações</h1>
+    <p class="muted">Este é um painel simples apenas para visualização rápida.</p>
+
+    <form method="get" style="margin: 12px 0; display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+      <div>
+        <label>Busca</label><br />
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Nome" />
+      </div>
+      <div>
+        <label>Tipo</label><br />
+        <select name="type">
+          <option value="">Todos</option>
+          <option value="webhook" {% if request.GET.type == 'webhook' %}selected{% endif %}>Webhook</option>
+          <option value="whatsapp" {% if request.GET.type == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+          <option value="email" {% if request.GET.type == 'email' %}selected{% endif %}>Email</option>
+        </select>
+      </div>
+      <div>
+        <label>Status</label><br />
+        <select name="active">
+          <option value="">Todos</option>
+          <option value="true" {% if request.GET.active == 'true' %}selected{% endif %}>Ativo</option>
+          <option value="false" {% if request.GET.active == 'false' %}selected{% endif %}>Pausado</option>
+        </select>
+      </div>
+      <div>
+        <label>Página</label><br />
+        <input name="page" type="number" min="1" value="{{ page_obj.number|default:1 }}" style="width:80px" />
+      </div>
+      <div>
+        <label>Itens por página</label><br />
+        <input name="page_size" type="number" min="1" max="50" value="{{ page_obj.paginator.per_page|default:10 }}" style="width:100px" />
+      </div>
+      <div>
+        <button type="submit">Filtrar</button>
+      </div>
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Tipo</th>
+          <th>Status</th>
+          <th>Última Execução</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in automations %}
+        <tr>
+          <td>{{ a.name }}</td>
+          <td>{{ a.get_type_display }}</td>
+          <td>
+            {% if a.is_active %}
+              <span class="badge ok">Ativo</span>
+            {% else %}
+              <span class="badge warn">Pausado</span>
+            {% endif %}
+          </td>
+          <td>{{ a.last_run_at|default:"—" }}</td>
+          <td class="actions">
+            {% if a.is_active %}
+            <form method="post" action="/api/automations/{{ a.id }}/pause/">
+              <button type="submit">Pausar</button>
+            </form>
+            {% else %}
+            <form method="post" action="/api/automations/{{ a.id }}/activate/">
+              <button type="submit">Ativar</button>
+            </form>
+            {% endif %}
+            <form method="post" action="/api/automations/{{ a.id }}/trigger/">
+              <button type="submit">Executar</button>
+            </form>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="5">
+            <strong>Execuções recentes</strong>
+            <ul class="muted">
+              {% for log in a.logs.all|slice:":3" %}
+                <li>
+                  <span>{{ log.created_at }}:</span>
+                  <span>Status: {{ log.status }}</span>
+                  {% if log.metrics.elapsed_ms %}<span> • {{ log.metrics.elapsed_ms }} ms</span>{% endif %}
+                  {% if log.error_message %}<span> • Erro: {{ log.error_message|truncatechars:80 }}</span>{% endif %}
+                </li>
+              {% empty %}
+                <li>Sem execuções recentes.</li>
+              {% endfor %}
+            </ul>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="muted">Nenhuma automação encontrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if page_obj %}
+      <div style="margin-top: 12px; display:flex; gap:8px; align-items:center;">
+        <span class="muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Próxima</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "saas-automacoes-backend-node",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "smoke": "powershell -ExecutionPolicy Bypass -File scripts/smoke.ps1 -BaseUrl http://127.0.0.1:3001 -Plan pro",
+    "start:bg": "powershell -ExecutionPolicy Bypass -File scripts/start-bg.ps1",
+    "stop:bg": "powershell -ExecutionPolicy Bypass -File scripts/stop-bg.ps1",
+    "dev": "nodemon --watch src --ext js --exec \"node src/server.js\""
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.0.1",
+    "helmet": "^7.2.0",
+    "bcryptjs": "^2.4.3",
+    "express-rate-limit": "^7.4.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "overrides": {}
+}

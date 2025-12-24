@@ -1,0 +1,25 @@
+# Auditing: list and filters
+
+### List latest logs (admin)
+GET http://localhost:8000/api/v1/auditing/logs?page=1&page_size=25&ordering=-created_at
+Authorization: Bearer {{access}}
+
+### Filter by method (GET)
+GET http://localhost:8000/api/v1/auditing/logs?method=GET
+Authorization: Bearer {{access}}
+
+### Filter by path substring
+GET http://localhost:8000/api/v1/auditing/logs?path_contains=/api/v1/users/me
+Authorization: Bearer {{access}}
+
+### Filter by source (middleware)
+GET http://localhost:8000/api/v1/auditing/logs?source=middleware
+Authorization: Bearer {{access}}
+
+### Filter by source (admin)
+GET http://localhost:8000/api/v1/auditing/logs?source=admin
+Authorization: Bearer {{access}}
+
+### Filter by source (cli)
+GET http://localhost:8000/api/v1/auditing/logs?source=cli
+Authorization: Bearer {{access}}

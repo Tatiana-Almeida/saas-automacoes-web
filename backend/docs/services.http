@@ -1,0 +1,79 @@
+@baseUrl = http://localhost:8000
+@domain = acme.localhost
+@access = REPLACE_WITH_ACCESS_TOKEN
+
+### Login (Cookie HttpOnly também é suportado)
+POST {{baseUrl}}/api/v1/auth/token
+Content-Type: application/json
+
+{
+  "username": "operator",
+  "password": "Test123!"
+}
+
+### WhatsApp: enviar mensagem (perm: send_whatsapp)
+POST {{baseUrl}}/api/v1/whatsapp/messages/send
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "to": "+5511999999999",
+  "message": "Olá do tenant!"
+}
+
+### Email: enviar (perm: email_send)
+POST {{baseUrl}}/api/v1/email/messages/send
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "to": "destinatario@example.com",
+  "subject": "Assunto",
+  "body": "Conteúdo do email"
+}
+
+### SMS: enviar (perm: sms_send)
+POST {{baseUrl}}/api/v1/sms/messages/send
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "to": "+5511888888888",
+  "message": "SMS de teste"
+}
+
+### Chatbots: enviar (perm: chatbots_send)
+POST {{baseUrl}}/api/v1/chatbots/messages/send
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "conversation_id": "conv-123",
+  "message": "Olá, bot!"
+}
+
+### Workflows: executar (perm: workflows_execute)
+POST {{baseUrl}}/api/v1/workflows/execute
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "workflow": "welcome_flow",
+  "params": { "userId": 42 }
+}
+
+### AI: inferência (perm: ai_infer)
+POST {{baseUrl}}/api/v1/ai/infer
+Content-Type: application/json
+Host: {{domain}}
+Authorization: Bearer {{access}}
+
+{
+  "model": "gpt-small",
+  "input": "Escreva um resumo curto sobre RBAC"
+}

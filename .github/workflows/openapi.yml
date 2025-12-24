@@ -1,0 +1,53 @@
+name: Generate OpenAPI Schema
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/openapi.yml'
+  workflow_dispatch:
+
+jobs:
+  spectacular-schema:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install openapi-spec-validator
+
+      - name: Generate OpenAPI via drf-spectacular
+        run: |
+          python manage.py spectacular --file openapi.yaml
+
+      - name: Validate OpenAPI schema
+        run: |
+          python -m openapi_spec_validator openapi.yaml
+
+      - name: Lint OpenAPI with Redocly
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          npm --version
+          npm install -g @redocly/cli
+          redocly lint openapi.yaml
+
+      - name: Upload OpenAPI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi.yaml
+          path: backend/openapi.yaml

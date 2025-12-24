@@ -1,0 +1,8 @@
+Olá,
+
+Este é um email de teste.
+
+{{ body }}
+
+Obrigado,
+Equipe {{ site_name|default:"SaaS" }}
