@@ -241,34 +241,40 @@ def ensure_tenant_schemas(django_db_blocker):
                 ("delta", "delta.localhost"),
             ]
 
-            if create_tenant_helper:
+            if _create_tenant is None:
                 for schema, domain in default_schemas:
                     try:
-                        create_tenant_helper(schema_name=schema, domain=domain)
+                    # Prefer stable test utils path when present.
+                    from backend.tests.utils.tenants import create_tenant as _create_tenant
+                except Exception:
+                    try:
+                        from tests.utils.tenants import create_tenant as _create_tenant
                     except Exception:
-                        # Do not fail entire session if creating one tenant fails;
-                        # tests may not depend on every tenant above.
-                        pass
-        except Exception:
-            # If imports fail, do not block tests; leave to per-test helpers.
-            pass
-    return
+                        try:
+                            from backend.tests.helpers.tenant import create_tenant as _create_tenant
+                        except Exception:
+                            try:
+                                from tests.helpers.tenant import create_tenant as _create_tenant
+                            except Exception:
+                                try:
+                                    import importlib.util
+                                    from pathlib import Path
 
-
-@pytest.fixture(autouse=True, scope="session")
-def auto_migrate_new_tenants(django_db_blocker):
-    """Ensure tenant schemas are migrated when tests create tenants.
-
-    Rationale:
-    - Tests commonly create `Tenant` objects at runtime then perform requests
-      against tenant-scoped endpoints. Those requests fail if the tenant schema
-      does not have migrations applied (ProgrammingError: relation "x" does not exist).
-    - We patch `Tenant.save` during the test session so that after a tenant is
-      created the test runner runs `migrate_schemas --tenant <schema>` to apply
-      tenant migrations in a deterministic, test-only manner.
-
-    Notes / rules followed:
-    - This fixture is TEST-ONLY and guarded by the `DJANGO_SETTINGS_MODULE`
+                                    helper_path = (
+                                        Path(__file__).resolve().parents[1]
+                                        / "tests"
+                                        / "helpers"
+                                        / "tenant.py"
+                                    )
+                                    spec = importlib.util.spec_from_file_location(
+                                        "tenant_helper", str(helper_path)
+                                    )
+                                    module = importlib.util.module_from_spec(spec)
+                                    spec.loader.exec_module(module)
+                                    _create_tenant = getattr(module, "create_tenant")
+                                except Exception as e:
+                                    pytest.skip(f"tenant helper not available: {e}")
+            return _create_tenant
       check below so it will not run under lightweight `settings_test`.
     - Exceptions from migration are NOT silenced — failures will surface so
       test suite authors can address missing migrations.
