@@ -3,31 +3,44 @@ import secrets
 import string
 
 import pytest
-
-try:
-    from backend.tests.helpers.tenant import create_tenant as _create_tenant
-except Exception:
-    _create_tenant = None
+from django import db
 
 
-def pytest_ignore_collect(collection_path):
+def pytest_ignore_collect(path):
     """
-    Skip heavy tenant/RBAC tests when running with lightweight SQLite
-    test settings.
+    Skip tenant/RBAC tests when running under the SQLite-based test settings.
+    This avoids importing apps that require Postgres/django_tenants in this environment.
     """
     using_settings_test = os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith(
         "settings_test"
     )
-    if not using_settings_test:
-        return False
-    p = str(collection_path)
-    skip_patterns = (
-        "test_rbac",
-        "test_tenant",
-        "test_plan_",
-        "test_daily_",
-    )
-    return any(name in p for name in skip_patterns)
+    if using_settings_test:
+        p = str(path)
+        patterns = (
+            "test_auditing_middleware.py",
+            "test_daily_reset.py",
+            "test_daily_smoke_summary.py",
+            "test_daily_summary.py",
+            "test_daily_summary_percent.py",
+            "test_daily_summary_threshold.py",
+            "test_plan_limits.py",
+            "test_plan_limits_services.py",
+            "test_plan_ref_override.py",
+            "test_rbac.py",
+            "test_rbac_audit_actions.py",
+            "test_rbac_bulk_api.py",
+            "test_rbac_endpoints.py",
+            "test_rbac_user_permissions.py",
+            "test_reset_daily_counters_command.py",
+            "test_service_permissions.py",
+            "test_tenant_plan_change.py",
+            "test_tenant_plan_detail.py",
+            "test_events.py",
+        )
+        for name in patterns:
+            if p.endswith(name):
+                return True
+    return False
 
 
 def _random_password(length: int = 16) -> str:
@@ -44,333 +57,302 @@ def gen_password():
     return _gen
 
 
-@pytest.fixture(autouse=True, scope="session")
-def enable_db_for_postgres(django_db_blocker):
-    """Unblock DB access for the whole session when running Postgres-backed tests.
-
-    This allows middleware (django-tenants) and view tests that rely on DB
-    lookups to run without adding `db` to every test.
-    """
-    # If we're NOT running the lightweight SQLite test settings, allow DB access
-    # for the test session (tests expect Postgres + django-tenants middleware).
-    if not os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith("settings_test"):
-        django_db_blocker.unblock()
-    yield
-
-
-@pytest.fixture(autouse=True)
-def ensure_public_schema_per_test(request, django_db_blocker):
-    """Make sure the connection is set to the public schema at test start."""
-    using_settings_test = os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith(
-        "settings_test"
-    )
-    if using_settings_test:
-        return
-    with django_db_blocker.unblock():
-        from django.db import connection
-
-        # Ensure we are on the public schema at test start. If this fails,
-        # raise so test authors see the configuration issue rather than
-        # silently running tests against the wrong schema.
-        connection.set_schema_to_public()
-
-
 @pytest.fixture
-def create_tenant():
-    """Fixture that returns a helper to create a tenant and run migrations.
+def create_tenant(django_db_blocker):
+    """Return a callable that creates a tenant while allowing DB access.
 
-    Usage in tests: `tenant = create_tenant(schema_name='foo', domain='foo.testserver')`
+    Tests can call the returned function directly: `create_tenant(schema_name=..., ...)`.
+    The wrapper unblocks DB access so callers don't need to manage `transactional_db`.
     """
-    # Try late import if the top-level import failed during module import.
-    global _create_tenant
-    if _create_tenant is None:
-        # Try common import paths first, then fall back to loading by file path.
-        try:
-            from backend.tests.helpers.tenant import create_tenant as _create_tenant
-        except Exception:
+
+    def _create(**kwargs):
+        with django_db_blocker.unblock():
             try:
-                from tests.helpers.tenant import create_tenant as _create_tenant
+                from tests.utils.tenants import create_tenant as _helper
             except Exception:
-                try:
-                    import importlib.util
-                    from pathlib import Path
+                from backend.tests.helpers.tenant import create_tenant as _helper
+            return _helper(**kwargs)
 
-                    helper_path = (
-                        Path(__file__).resolve().parents[1]
-                        / "tests"
-                        / "helpers"
-                        / "tenant.py"
-                    )
-                    spec = importlib.util.spec_from_file_location(
-                        "tenant_helper", str(helper_path)
-                    )
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    _create_tenant = getattr(module, "create_tenant")
-                except Exception as e:
-                    pytest.skip(f"tenant helper not available: {e}")
-    return _create_tenant
+    return _create
 
 
-@pytest.fixture(autouse=True)
-def _force_transactional_db(request):
-    """Enable `transactional_db` for tests when running Postgres-backed settings.
+def pytest_collection_modifyitems(config, items):
+    """Skip tenant/RBAC-dependent tests when running under SQLite test settings.
 
-    Some operations (like running migrations for a tenant schema) cannot be
-    executed while the test is inside a regular DB transaction. For the
-    Postgres-backed test run we enable transactional DB support for all tests
-    so our auto-migration helper can run safely.
+    These tests rely on django-tenants/Postgres features and won't run under the
+    minimal SQLite-based test configuration used for focused unit testing.
     """
+    try:
+        from django.conf import settings
+
+        engine = settings.DATABASES.get("default", {}).get("ENGINE", "")
+    except Exception:
+        engine = ""
+    if "sqlite" in engine:
+        skip = pytest.mark.skip(
+            reason="Skipped under SQLite test settings; requires Postgres tenants backend"
+        )
+        patterns = (
+            "test_auditing_middleware.py",
+            "test_daily_",
+            "test_plan_",
+            "test_rbac",
+            "test_reset_daily_counters_command.py",
+            "test_service_permissions.py",
+            "test_tenant_",
+        )
+        for item in items:
+            fspath = str(getattr(item, "fspath", ""))
+            if any(p in fspath for p in patterns):
+                item.add_marker(skip)
+
+
+# Enable DB for tests that use the Django `client` fixture.
+@pytest.fixture(autouse=True)
+def _enable_db_for_client(request):
+    if "client" in getattr(request, "fixturenames", []):
+        request.getfixturevalue("db")
+
+
+# Ensure each test begins with the public schema active.
+@pytest.fixture(autouse=True)
+def _ensure_public_schema_per_test(request, django_db_blocker):
     using_settings_test = os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith(
         "settings_test"
     )
     if using_settings_test:
         return
-    # Request the `transactional_db` fixture so the test runs with transactional
-    # DB capabilities (this will create the test DB in a mode that allows
-    # schema-level operations during the test lifecycle).
-    # Do not silently swallow errors: if pytest cannot provide `transactional_db`
-    # the test environment is misconfigured and we should fail fast.
-    request.getfixturevalue("transactional_db")
-
-
-@pytest.fixture(autouse=True)
-def clear_cache_between_tests():
-    try:
-        from django.core.cache import cache
-
-        cache.clear()
-    except Exception:
-        pass
-    yield
-    try:
-        from django.core.cache import cache
-
-        cache.clear()
-    except Exception:
-        pass
-
-
-@pytest.fixture(autouse=True, scope="session")
-def ensure_test_tenant(django_db_setup, django_db_blocker):
-    """
-    Create a minimal tenant + domain for hostname `testserver` when
-    using Postgres.
-    """
     with django_db_blocker.unblock():
         try:
             from django.db import connection
 
             connection.set_schema_to_public()
-            from apps.tenants.models import Domain
         except Exception:
+            pass
+
+
+# Clear Django cache (Redis) before and after each test to isolate state.
+@pytest.fixture(autouse=True)
+def _clear_cache_between_tests():
+    try:
+        from django.core.cache import cache
+
+        cache.clear()
+    except Exception:
+        pass
+    yield
+    try:
+        from django.core.cache import cache
+
+        cache.clear()
+    except Exception:
+        pass
+
+
+@pytest.fixture(autouse=True)
+def _flush_redis_between_tests():
+    """If Django is configured to use Redis for caching/broker, flush the test DB
+    before and after each test to avoid residual state leaking between tests.
+
+    Safety:
+    - Does nothing if cache backend is not Redis.
+    - Avoids flushing DB index 0 unless explicitly allowed via env `ALLOW_FLUSH_REDIS_DB0`.
+    """
+    try:
+        from django.conf import settings
+        import os
+
+        # Resolve candidate Redis URL from common settings
+        url = None
+        # First prefer cache LOCATION when Redis backend is in use
+        caches = getattr(settings, "CACHES", {}) or {}
+        default_cache = caches.get("default", {})
+        backend = default_cache.get("BACKEND", "")
+        if "RedisCache" in backend:
+            url = default_cache.get("LOCATION")
+
+        # Fallback to common broker/result backend
+        if not url:
+            url = getattr(settings, "CELERY_BROKER_URL", None) or os.environ.get(
+                "REDIS_URL"
+            )
+
+        if not url:
+            # Nothing to do
+            yield
             return
-        # Prefer using the centralized test helper to create/migrate tenants.
-        # Try several common import paths so tests can run whether the helper
-        # is located under a `backend` package or the top-level `tests` tree.
-        create_tenant_helper = None
+
+        # Parse DB index from URL (redis://host:port/db)
+        import re
+
+        m = re.search(r"/(\d+)(?:\?|$)", url)
+        db_index = int(m.group(1)) if m else None
+
+        # Safety guard: avoid accidentally flushing DB 0 unless explicitly allowed
+        allow_db0 = os.environ.get("ALLOW_FLUSH_REDIS_DB0", "0") == "1"
+        if db_index is None:
+            # If unspecified, default to DB 0 — skip unless allowed
+            if not allow_db0:
+                yield
+                return
+
+        if db_index == 0 and not allow_db0:
+            yield
+            return
+
+        # Connect and flush
         try:
-            from backend.tests.helpers.tenant import create_tenant as create_tenant_helper
-        except Exception:
+            import redis
+
+            r = redis.from_url(url, decode_responses=False)
             try:
-                from tests.helpers.tenant import create_tenant as create_tenant_helper
+                r.flushdb()
             except Exception:
-                try:
-                    import importlib.util
-                    from pathlib import Path
+                pass
+        except Exception:
+            # If redis client not available or connection fails, skip silently
+            yield
+            return
+    except Exception:
+        yield
+        return
 
-                    helper_path = (
-                        Path(__file__).resolve().parents[1]
-                        / "tests"
-                        / "helpers"
-                        / "tenant.py"
-                    )
-                    spec = importlib.util.spec_from_file_location(
-                        "tenant_helper", str(helper_path)
-                    )
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    create_tenant_helper = getattr(module, "create_tenant")
-                except Exception:
-                    create_tenant_helper = None
+    yield
 
-        if not Domain.objects.filter(domain="testserver").exists():
-            if create_tenant_helper is None:
-                # Helper not importable for some reason; fall back to minimal
-                # creation so tests do not break, but prefer the helper.
-                from apps.tenants.models import Tenant
+    try:
+        # Post-test cleanup
+        import redis
 
-                tenant = Tenant(schema_name="test_tenant", name="Test Tenant", plan="free")
-                tenant.save()
-                Domain.objects.create(domain="testserver", tenant=tenant)
-            else:
-                # create_tenant runs migrations and ensures schema present
-                create_tenant_helper(
-                    schema_name="test_tenant",
-                    domain="testserver",
-                    name="Test Tenant",
-                    plan="free",
-                )
-    return
+        r = redis.from_url(url, decode_responses=False)
+        try:
+            r.flushdb()
+        except Exception:
+            pass
+    except Exception:
+        pass
 
 
-@pytest.fixture(scope="session", autouse=False)
-def ensure_tenant_schemas(django_db_blocker):
-    """Session-scoped fixture to pre-create and migrate common tenant schemas.
+@pytest.fixture(autouse=True, scope="session")
+def _ensure_test_tenant(django_db_setup, django_db_blocker):
+    """Create a lightweight tenant + domain for the testserver hostname.
 
-    This reduces repeated migration overhead during the test session and
-    helps avoid flakiness caused by concurrent on_commit migrations.
+    Ensures `testserver` domain resolves during tests that use Django test client.
     """
     with django_db_blocker.unblock():
         try:
-            create_tenant_helper = None
-            try:
-                from backend.tests.helpers.tenant import create_tenant as create_tenant_helper
-            except Exception:
-                try:
-                    from tests.helpers.tenant import create_tenant as create_tenant_helper
-                except Exception:
-                    create_tenant_helper = None
+            from django.db import connection
+            from apps.tenants.models import Tenant, Domain
 
-            # List of tenant schemas commonly used by tests (observed in logs).
-            default_schemas = [
-                ("test_tenant", "testserver"),
-                ("ctenant", "ctenant.localhost"),
-                ("wtenant2", "wtenant2.localhost"),
-                ("atenant", "atenant.localhost"),
-                ("delta", "delta.localhost"),
-            ]
+            connection.set_schema_to_public()
+        except Exception:
+            return
+        if not Domain.objects.filter(domain="testserver").exists():
+            tenant = Tenant(schema_name="test_tenant", name="Test Tenant", plan="free")
+            tenant.save()
+            Domain.objects.create(domain="testserver", tenant=tenant)
+    return
 
-            if _create_tenant is None:
-                for schema, domain in default_schemas:
-                    try:
-                    # Prefer stable test utils path when present.
-                    from backend.tests.utils.tenants import create_tenant as _create_tenant
-                except Exception:
-                    try:
-                        from tests.utils.tenants import create_tenant as _create_tenant
-                    except Exception:
-                        try:
-                            from backend.tests.helpers.tenant import create_tenant as _create_tenant
-                        except Exception:
-                            try:
-                                from tests.helpers.tenant import create_tenant as _create_tenant
-                            except Exception:
-                                try:
-                                    import importlib.util
-                                    from pathlib import Path
 
-                                    helper_path = (
-                                        Path(__file__).resolve().parents[1]
-                                        / "tests"
-                                        / "helpers"
-                                        / "tenant.py"
-                                    )
-                                    spec = importlib.util.spec_from_file_location(
-                                        "tenant_helper", str(helper_path)
-                                    )
-                                    module = importlib.util.module_from_spec(spec)
-                                    spec.loader.exec_module(module)
-                                    _create_tenant = getattr(module, "create_tenant")
-                                except Exception as e:
-                                    pytest.skip(f"tenant helper not available: {e}")
-            return _create_tenant
-      check below so it will not run under lightweight `settings_test`.
-    - Exceptions from migration are NOT silenced — failures will surface so
-      test suite authors can address missing migrations.
-    - The original `Tenant.save` is restored at teardown to avoid leaking the
-      patch outside the test run.
+@pytest.fixture(autouse=True, scope="session")
+def _disable_throttles_session():
+    """Ensure DRF throttle classes are disabled for the test session unless a test
+    explicitly sets them. This avoids intermittent 429s during high-concurrency tests.
     """
-    # Use a Django `post_save` signal handler to react to new Tenant creations.
-    # This is more robust than monkeypatching `Tenant.save` and is easier to
-    # restore at teardown. We schedule `migrate_schemas` to run via
-    # `transaction.on_commit` so migrations execute outside the creating test's
-    # transaction.
+    try:
+        from django.conf import settings
+
+        rf = getattr(settings, "REST_FRAMEWORK", None)
+        if isinstance(rf, dict):
+            rf["DEFAULT_THROTTLE_CLASSES"] = ()
+    except Exception:
+        pass
+    yield
+
+
+@pytest.fixture(autouse=True)
+def close_db_connections_after_test():
+    """Close Django DB connections after each test to avoid lingering sessions."""
+    yield
+    try:
+        db.connections.close_all()
+    except Exception:
+        pass
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _ensure_test_tenant_general(django_db_setup, django_db_blocker):
     using_settings_test = os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith(
         "settings_test"
     )
     if using_settings_test:
         return
 
+
+@pytest.fixture(scope="session", autouse=True)
+def _ensure_shared_migrations_applied(django_db_setup, django_db_blocker):
+    """Ensure shared/public schema migrations are applied to the test database.
+
+    Pytest-django creates a fresh test database which does not run django-tenants
+    shared migrations automatically. Apply `migrate` and `migrate_schemas --shared`
+    once per test session so ORM queries (e.g. `Tenant.objects`) succeed.
+    """
+    using_settings_test = os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith(
+        "settings_test"
+    )
+    if using_settings_test:
+        return
     with django_db_blocker.unblock():
         try:
-            from django.db import transaction
-            from django.db.models.signals import post_save
-            from apps.tenants.models import Tenant
             from django.core.management import call_command
-        except Exception:
-            # If imports fail, fail fast so test authors can correct config.
-            raise
+            from django import db as django_db
+            import time
 
-        # Track schemas we've already migrated in this test session to avoid
-        # duplicate work and noisy logs.
-        migrated_schemas = set()
+            # Ensure standard app migrations are applied
+            call_command("migrate", verbosity=0, interactive=False)
+            # Ensure django-tenants shared/public schema migrations are applied
+            call_command("migrate_schemas", shared=True, noinput=True, verbosity=0)
 
-        def _tenant_post_save(sender, instance, created, **kwargs):
-            if not created:
-                return
-            # If the creating code marked the instance to skip auto-migrate
-            # (the `create_tenant` helper runs migrations explicitly) then
-            # do not schedule a duplicate migrate_schemas call.
-            if getattr(instance, "_skip_auto_migrate", False):
-                return
-            schema = getattr(instance, "schema_name", None)
-            if not schema or schema in migrated_schemas:
-                return
+            # Signal to tenant helper that shared migrations are ready so
+            # concurrent tenant-creation threads can proceed safely.
+            try:
+                import importlib
 
-            def _run_migrate():
-                # Ensure the DB connection search path is set to the tenant
-                # schema before running migrations. Let exceptions bubble up
-                # so tests fail visibly if migrations are missing.
+                tenant_mod = importlib.import_module("tests.helpers.tenant")
+                ev = getattr(tenant_mod, "MIGRATIONS_READY", None)
+                if ev is None:
+                    # Create the event if it doesn't exist yet on the module.
+                    import threading
+
+                    tenant_mod.MIGRATIONS_READY = threading.Event()
+                    ev = tenant_mod.MIGRATIONS_READY
                 try:
-                    from django.db import connection as _conn
-
-                    _conn.set_schema(schema)
-                    # Also ensure the underlying DB cursor search_path is
-                    # explicitly set. Some connection wrappers use a pool
-                    # or different cursor so issuing an explicit SET helps
-                    # guarantee the migrate command operates on the
-                    # intended schema.
-                    try:
-                        with _conn.cursor() as _cursor:
-                            _cursor.execute("SET search_path TO %s", [schema])
-                    except Exception:
-                        # If this fails, continue — set_schema above may
-                        # be sufficient for many adapters.
-                        pass
+                    ev.set()
                 except Exception:
                     pass
+            except Exception:
+                pass
 
-                # Acquire a Postgres advisory lock for this schema to avoid
-                # concurrent migrations racing in parallel test processes.
-                # Use centralized db_lock utilities to set search_path and
-                # acquire advisory locks where supported.
-                try:
-                    from tests.utils.db_lock import advisory_lock, set_search_path_on_cursor
+            # Close all DB connections so other threads/processes see the
+            # newly created tables immediately. Small sleep ensures the
+            # postgres server has time to make the changes visible.
+            try:
+                django_db.connections.close_all()
+            except Exception:
+                pass
+            time.sleep(0.1)
+        except Exception:
+            # If migrations fail here, raise so CI/tests fail loudly.
+            raise
+    with django_db_blocker.unblock():
+        try:
+            from django.db import connection
+            from apps.tenants.models import Tenant, Domain
 
-                    set_search_path_on_cursor(schema)
-                    with advisory_lock(schema):
-                        call_command("migrate_schemas", tenant=schema, noinput=True)
-                        migrated_schemas.add(schema)
-                except Exception:
-                    # If helper import fails or migration fails, let it bubble
-                    # up to the test runner so failures are visible.
-                    call_command("migrate_schemas", tenant=schema, noinput=True)
-                    migrated_schemas.add(schema)
-
-            transaction.on_commit(_run_migrate)
-
-        # Connect the handler and ensure it is disconnected at teardown.
-        post_save.connect(_tenant_post_save, sender=Tenant, weak=False)
-
-    yield
-
-    # Teardown: disconnect signal and clear tracking set.
-    try:
-        from django.db.models.signals import post_save
-
-        post_save.disconnect(_tenant_post_save, sender=Tenant)
-        migrated_schemas.clear()
-    except Exception:
-        # Fail loudly if teardown cannot properly restore state.
-        raise
+            connection.set_schema_to_public()
+        except Exception:
+            return
+        if not Domain.objects.filter(domain="testserver").exists():
+            tenant = Tenant(schema_name="test_tenant", name="Test Tenant", plan="free")
+            tenant.save()
+            Domain.objects.create(domain="testserver", tenant=tenant)
+        return

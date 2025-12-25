@@ -15,11 +15,19 @@ Design notes:
 
 from typing import Optional
 import logging
+import time
+import threading
 
 from tests.utils.db_lock import advisory_lock, set_search_path_on_cursor
 
+# Event set by the session fixture when shared/public migrations have been applied.
+MIGRATIONS_READY = threading.Event()
+
 from django.core.management import call_command
-from django.db import connection
+import logging
+import time
+
+from django.db import connection, connections, transaction
 
 from apps.tenants.models import Tenant, Domain
 from apps.core import middleware as core_middleware
@@ -50,31 +58,129 @@ def create_tenant(
     Returns the created `Tenant` instance.
     """
 
-    # Create tenant model instance and save it. Tests should provide any
-    # additional model fields via tenant_kwargs.
-    tenant = Tenant(
-        schema_name=schema_name,
-        name=name or schema_name,
-        plan=plan,
-        **tenant_kwargs,
-    )
-    # Mark the instance so the test-suite's post_save auto-migrate signal
-    # handler can skip scheduling its own `migrate_schemas` run; this helper
-    # will run migrations explicitly below.
-    setattr(tenant, "_skip_auto_migrate", True)
-    tenant.save()
+    # Wait for shared/public migrations applied by the test session fixture.
+    # This avoids races where concurrent test threads attempt to create tenants
+    # before the public `tenants_tenant` table exists.
     try:
-        delattr(tenant, "_skip_auto_migrate")
+        MIGRATIONS_READY.wait(timeout=30)
     except Exception:
         pass
 
-    # All subsequent DB-level operations require an unblocked DB connection.
-    # Tests that call this helper must be using `transactional_db` or
-    # otherwise allow DB access; if not, pytest/pytest-django will raise.
-    # We use raw SQL only to ensure the schema exists; migration command will
-    # create tables.
-    with connection.cursor() as cursor:
-        cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+    # Serialize tenant creation + schema migration to avoid races when tests
+    # create the same tenant concurrently. Acquire an advisory lock keyed
+    # by the schema name for the duration of creation/migration.
+    with advisory_lock(schema_name):
+        # Ensure we're operating against the public schema for tenant model
+        # queries and creation.
+        try:
+            connection.set_schema_to_public()
+        except Exception:
+            pass
+
+        # Wait briefly for the public tenants table to exist. In pytest's
+        # test DB setup there can be a small window where the test database
+        # has been created but migrations haven't finished on other threads
+        # yet; wait up to ~5s before proceeding to avoid racey calls that
+        # result in ``relation "tenants_tenant" does not exist``.
+        def _public_table_exists():
+            try:
+                with connection.cursor() as cur:
+                    cur.execute(
+                        "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name=%s",
+                        [Tenant._meta.db_table],
+                    )
+                    return cur.fetchone() is not None
+            except Exception:
+                return False
+
+        total_wait = 0.0
+        # Increase the wait window and use modest sleeps to give pytest's
+        # session fixture time to apply migrations in concurrent setups.
+        while not _public_table_exists() and total_wait < 10.0:
+            time.sleep(0.1)
+            total_wait += 0.1
+
+        # Ensure the public tenants table exists before proceeding. In some
+        # concurrent test setups the public migrations may not have finished
+        # on other threads/processes yet; run public migrations here while
+        # holding the advisory lock as a best-effort to avoid `relation
+        # "tenants_tenant" does not exist` errors.
+        try:
+            with connection.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name=%s",
+                    [Tenant._meta.db_table],
+                )
+                exists = cur.fetchone() is not None
+        except Exception:
+            exists = False
+
+        if not exists:
+            # Bootstrapping: ensure standard app migrations and the
+            # django-tenants shared/public migrations are applied while
+            # holding the advisory lock. Fail loudly if these commands
+            # cannot complete so tests surface the real problem instead
+            # of later ``relation ... does not exist`` errors.
+            try:
+                call_command("migrate", verbosity=0, interactive=False)
+                call_command(
+                    "migrate_schemas", shared=True, noinput=True, verbosity=0
+                )
+            except Exception:
+                # Re-raise so calling tests see the underlying migration
+                # failure rather than a later obscure ProgrammingError.
+                raise
+
+        # If another process already created the tenant, return it.
+        try:
+            existing = Tenant.objects.filter(schema_name=schema_name).first()
+            if existing:
+                return existing
+        except Exception:
+            existing = None
+
+        # Insert tenant row directly into the public tenants table to avoid
+        # Django-tenants' automatic `create_schema` behavior on `save()`.
+        # This gives us explicit control over schema creation and migrations.
+        table = Tenant._meta.db_table
+        plan_ref_id = None
+        if "plan_ref" in tenant_kwargs:
+            pr = tenant_kwargs.get("plan_ref")
+            try:
+                plan_ref_id = pr.id
+            except Exception:
+                plan_ref_id = pr
+
+        with transaction.atomic():
+            try:
+                connection.set_schema_to_public()
+            except Exception:
+                pass
+
+            with connection.cursor() as cursor:
+                insert_sql = (
+                    f"INSERT INTO public.{table} (schema_name, name, plan, is_active, plan_ref_id, created_at) "
+                    "VALUES (%s, %s, %s, %s, %s, now()) RETURNING id"
+                )
+                cursor.execute(
+                    insert_sql,
+                    [schema_name, name or schema_name, plan, True, plan_ref_id],
+                )
+                row = cursor.fetchone()
+                tenant_id = row[0] if row else None
+
+        # Load the instance via ORM (no save) so callers get a Tenant object.
+        tenant = None
+        if tenant_id:
+            try:
+                connection.set_schema_to_public()
+            except Exception:
+                pass
+            tenant = Tenant.objects.get(pk=tenant_id)
+
+        # Ensure schema exists at DB level while holding the lock.
+        with connection.cursor() as cursor:
+            cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
 
     # Ensure Domain is created in public schema so middleware can resolve host
     # to tenant even if the test's tenant row isn't visible to other DB
@@ -90,16 +196,78 @@ def create_tenant(
     # Register common host variant with port to match tests that set HTTP_HOST
     Domain.objects.get_or_create(domain=f"{domain}:80", defaults={"tenant": tenant})
 
-    # Run tenant migrations explicitly. Do not silence exceptions — if this
-    # fails the test should fail so migrations are fixed.
-    # Ensure the DB connection search path is set to the tenant schema so
-    # django-tenants will create migration tables in the correct schema.
-        # Ensure the underlying cursor used by the migration command has the
-        # correct search_path, and use an advisory lock to prevent concurrent
-        # migrate runs for this schema.
-        set_search_path_on_cursor(schema_name)
-        with advisory_lock(schema_name):
-            call_command("migrate_schemas", tenant=schema_name, noinput=True)
+    # Run tenant migrations explicitly while holding the advisory lock to
+    # avoid concurrent migrate runs. Re-acquire the advisory_lock here to
+    # ensure serialization even if the earlier creation phase released it.
+    with advisory_lock(schema_name):
+        try:
+            # Prefer connection-level schema switch for django-tenants-aware
+            # adapters; fall back to cursor-level SET as a safety net.
+            try:
+                connection.set_schema(schema_name)
+            except Exception:
+                with connection.cursor() as _cursor:
+                    _cursor.execute("SET search_path TO %s", [schema_name])
+
+            set_search_path_on_cursor(schema_name)
+
+            # Retry migrations a small number of times if a race causes
+            # MigrationSchemaMissing or transient DB cursor issues.
+            attempts = 6
+            for attempt in range(1, attempts + 1):
+                try:
+                    # Preferred: call django-tenants' migration executor API
+                    # directly to avoid the management command path that may
+                    # query `tenants_tenant` implicitly. We attempt to import
+                    # the executor module and find a class exposing
+                    # `run_migrations(tenants=...)`. This is resilient to
+                    # django-tenants versions that change class names.
+                    tried_executor = False
+                    try:
+                        mod = __import__(
+                            "django_tenants.migration_executors.standard",
+                            fromlist=["*"],
+                        )
+                        ExecutorClass = None
+                        for name in dir(mod):
+                            obj = getattr(mod, name)
+                            if isinstance(obj, type) and hasattr(obj, "run_migrations"):
+                                ExecutorClass = obj
+                                break
+                        if ExecutorClass is not None:
+                            executor = ExecutorClass()
+                            # Some implementations expect a list, others a
+                            # single tenant name. Try both.
+                            try:
+                                executor.run_migrations(tenants=[schema_name])
+                            except TypeError:
+                                executor.run_migrations(tenants=schema_name)
+                            tried_executor = True
+                    except Exception:
+                        tried_executor = False
+
+                    if not tried_executor:
+                        # Fallback to management command when direct API is
+                        # unavailable.
+                        call_command(
+                            "migrate_schemas",
+                            tenant=schema_name,
+                            noinput=True,
+                            verbosity=0,
+                        )
+                    break
+                except Exception:
+                    # If final attempt, re-raise; otherwise sleep briefly and retry.
+                    if attempt == attempts:
+                        raise
+                    time.sleep(0.2 * attempt)
+        finally:
+            # Restore public schema on the connection to avoid leaking tenant
+            # search_path into other test code.
+            try:
+                connection.set_schema_to_public()
+            except Exception:
+                pass
 
     # Diagnostics: log current schema/search_path before running migrations.
     try:
@@ -127,7 +295,7 @@ def create_tenant(
         # due to logging/diagnostic issues.
         pass
 
-    call_command("migrate_schemas", tenant=schema_name, noinput=True)
+    # migrations already applied above while holding advisory lock
 
     # Create simple proxy views in tenant schema for shared public tables
     # used by tenant-scoped code (idempotent). Do not hide errors here but

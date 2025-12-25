@@ -49,6 +49,9 @@ REST_FRAMEWORK = {
     },
 }
 
+# Disable throttle classes in tests to avoid accidental 429s unless specifically tested
+REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = ()
+
 # During tests, use session auth to allow `Client.force_login()` to work with DRF views.
 REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = (
     "apps.core.authentication.CookieJWTAuthentication",

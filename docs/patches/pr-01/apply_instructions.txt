@@ -1,0 +1,23 @@
+To apply PR-01 (tenant utils + conftest change):
+
+1. From the repository root run:
+
+   git fetch origin
+   git checkout -b fix/tenant-utils
+
+2. Copy the files from this folder into your repo (preserving paths), for example:
+
+   mkdir -p backend/tests/utils
+   cp docs/patches/pr-01/backend_tests_utils_tenants.py backend/tests/utils/tenants.py
+   cp docs/patches/pr-01/conftest.py backend/tests/conftest.py
+
+3. Stage and commit:
+
+   git add backend/tests/utils/tenants.py backend/tests/conftest.py
+   git commit -m "tests: consolidate tenant helper under tests.utils and prefer import path in conftest"
+
+4. Push and open PR as usual:
+
+   git push -u origin fix/tenant-utils
+
+Note: The provided files in this folder are named with underscores to avoid nested folders in the patch archive; move them to the proper paths shown above.

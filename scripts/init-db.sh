@@ -9,12 +9,12 @@ SLEEP=${SLEEP:-1}
 i=0
 while [ $i -lt $RETRIES ]; do
   i=$((i + 1))
-  # Probe Postgres availability with a small Python snippet. Use a
-  # heredoc to keep the snippet readable and avoid complex quoting.
-  python - <<'PY' >/dev/null 2>&1
-import socket, sys
+  # Use Python to test TCP connect so this script works even if pg_isready
+  # or psql are not available in the image.
+  if python - <<'PY' >/dev/null 2>&1; then
+import socket,sys
 try:
-    s = socket.socket()
+    s=socket.socket()
     s.settimeout(1)
     s.connect(("postgres", 5432))
     s.close()
@@ -22,7 +22,7 @@ try:
 except Exception:
     sys.exit(1)
 PY
-  if [ $? -eq 0 ]; then
+  then
     echo "[init-db] Postgres is available (attempt $i)"
     break
   fi

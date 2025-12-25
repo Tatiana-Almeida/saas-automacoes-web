@@ -1,0 +1,18 @@
+To apply PR-02 (concurrency smoke test):
+
+1. From the repository root run:
+
+   git checkout -b test/tenant-concurrency
+
+2. Copy the files from this folder into your repo (preserving paths), for example:
+
+   cp docs/patches/pr-02/backend_tests_test_tenant_concurrency.py backend/tests/test_tenant_concurrency.py
+
+3. Stage and commit:
+
+   git add backend/tests/test_tenant_concurrency.py
+   git commit -m "tests: add concurrency smoke test for tenant helper"
+
+4. Push and open PR as usual:
+
+   git push -u origin test/tenant-concurrency

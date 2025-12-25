@@ -32,32 +32,59 @@ def TenantMainMiddleware(get_response):
     )
 
     def middleware(request):
+        import logging
+        logger = logging.getLogger("apps.core")
+
+        # Resolve host from multiple sources with clear priority:
+        # 1. Explicit test registry mapping (fast in-process)
+        # 2. HTTP header 'X_TENANT_HOST' (useful for tests/scripts)
+        # 3. HTTP_HOST from META
+        # 4. request.get_host() fallback
+        host = None
         try:
+            host = (
+                request.META.get("HTTP_X_TENANT_HOST")
+                or request.META.get("X_TENANT_HOST")
+            )
+        except Exception:
             host = None
-            try:
+
+        try:
+            if not host:
                 host = request.META.get("HTTP_HOST")
-            except Exception:
-                host = None
-            try:
-                if not host:
-                    host = request.get_host()
-            except Exception:
-                pass
-
-            if host and host in TEST_DOMAIN_REGISTRY:
-                try:
-                    t = TEST_DOMAIN_REGISTRY.get(host)
-                    request.tenant = t
-                    from django.db import connection
-
-                    try:
-                        connection.set_schema(t.schema_name)
-                    except Exception:
-                        pass
-                except Exception:
-                    pass
         except Exception:
             pass
+
+        try:
+            if not host:
+                host = request.get_host()
+        except Exception:
+            pass
+
+        # normalize host: strip port
+        try:
+            if host and ":" in host:
+                host = host.split(":", 1)[0]
+        except Exception:
+            pass
+
+        # Try test-domain registry first (fast, in-process)
+        try:
+            if host and host in TEST_DOMAIN_REGISTRY:
+                t = TEST_DOMAIN_REGISTRY.get(host)
+                request.tenant = t
+                try:
+                    from django.db import connection
+
+                    connection.set_schema(t.schema_name)
+                except Exception:
+                    logger.exception(
+                        "Failed to set schema for test tenant %s", getattr(t, "schema_name", None)
+                    )
+        except Exception:
+            logger.exception(
+                "Error while resolving tenant from TEST_DOMAIN_REGISTRY for host=%s", host
+            )
 
         # If we resolved the tenant via TEST_DOMAIN_REGISTRY, skip the
         # django-tenants middleware to avoid its DB lookup which can't see
