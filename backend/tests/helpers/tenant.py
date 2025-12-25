@@ -55,7 +55,15 @@ def create_tenant(
         plan=plan,
         **tenant_kwargs,
     )
+    # Mark the instance so the test-suite's post_save auto-migrate signal
+    # handler can skip scheduling its own `migrate_schemas` run; this helper
+    # will run migrations explicitly below.
+    setattr(tenant, "_skip_auto_migrate", True)
     tenant.save()
+    try:
+        delattr(tenant, "_skip_auto_migrate")
+    except Exception:
+        pass
 
     # All subsequent DB-level operations require an unblocked DB connection.
     # Tests that call this helper must be using `transactional_db` or
@@ -81,6 +89,30 @@ def create_tenant(
 
     # Run tenant migrations explicitly. Do not silence exceptions — if this
     # fails the test should fail so migrations are fixed.
+    # Ensure the DB connection search path is set to the tenant schema so
+    # django-tenants will create migration tables in the correct schema.
+    try:
+        connection.set_schema(schema_name)
+    except Exception:
+        # Some DB backends or connection wrappers may not expose set_schema;
+        # in that case we still attempt to run the management command and
+        # let any errors surface.
+        pass
+
+    # Ensure search_path is set on the current DB connection cursor as a
+    # safety measure so the management command runs in the correct tenant
+    # schema. Some connection wrappers may require the explicit SQL SET
+    # to affect the underlying connection used by `call_command`.
+    try:
+        with connection.cursor() as cursor:
+            # Use parameterized value for the schema name. If the DB
+            # driver does not accept parameters for identifiers this may
+            # still work for common adapters; fall back gracefully.
+            cursor.execute("SET search_path TO %s", [schema_name])
+    except Exception:
+        # Fall back to relying on connection.set_schema above.
+        pass
+
     call_command("migrate_schemas", tenant=schema_name, noinput=True)
 
     # Create simple proxy views in tenant schema for shared public tables
