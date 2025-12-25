@@ -166,10 +166,33 @@ def ensure_test_tenant(django_db_setup, django_db_blocker):
         except Exception:
             return
         # Prefer using the centralized test helper to create/migrate tenants.
+        # Try several common import paths so tests can run whether the helper
+        # is located under a `backend` package or the top-level `tests` tree.
+        create_tenant_helper = None
         try:
             from backend.tests.helpers.tenant import create_tenant as create_tenant_helper
         except Exception:
-            create_tenant_helper = None
+            try:
+                from tests.helpers.tenant import create_tenant as create_tenant_helper
+            except Exception:
+                try:
+                    import importlib.util
+                    from pathlib import Path
+
+                    helper_path = (
+                        Path(__file__).resolve().parents[1]
+                        / "tests"
+                        / "helpers"
+                        / "tenant.py"
+                    )
+                    spec = importlib.util.spec_from_file_location(
+                        "tenant_helper", str(helper_path)
+                    )
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    create_tenant_helper = getattr(module, "create_tenant")
+                except Exception:
+                    create_tenant_helper = None
 
         if not Domain.objects.filter(domain="testserver").exists():
             if create_tenant_helper is None:
@@ -239,13 +262,38 @@ def auto_migrate_new_tenants(django_db_blocker):
         def _tenant_post_save(sender, instance, created, **kwargs):
             if not created:
                 return
+            # If the creating code marked the instance to skip auto-migrate
+            # (the `create_tenant` helper runs migrations explicitly) then
+            # do not schedule a duplicate migrate_schemas call.
+            if getattr(instance, "_skip_auto_migrate", False):
+                return
             schema = getattr(instance, "schema_name", None)
             if not schema or schema in migrated_schemas:
                 return
 
             def _run_migrate():
-                # Call management command directly; let exceptions bubble up so
-                # tests fail visibly if migrations are missing.
+                # Ensure the DB connection search path is set to the tenant
+                # schema before running migrations. Let exceptions bubble up
+                # so tests fail visibly if migrations are missing.
+                try:
+                    from django.db import connection as _conn
+
+                    _conn.set_schema(schema)
+                    # Also ensure the underlying DB cursor search_path is
+                    # explicitly set. Some connection wrappers use a pool
+                    # or different cursor so issuing an explicit SET helps
+                    # guarantee the migrate command operates on the
+                    # intended schema.
+                    try:
+                        with _conn.cursor() as _cursor:
+                            _cursor.execute("SET search_path TO %s", [schema])
+                    except Exception:
+                        # If this fails, continue — set_schema above may
+                        # be sufficient for many adapters.
+                        pass
+                except Exception:
+                    pass
+
                 call_command("migrate_schemas", tenant=schema, noinput=True)
                 migrated_schemas.add(schema)
 
