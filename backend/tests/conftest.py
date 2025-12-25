@@ -335,8 +335,32 @@ def auto_migrate_new_tenants(django_db_blocker):
                 except Exception:
                     pass
 
-                call_command("migrate_schemas", tenant=schema, noinput=True)
-                migrated_schemas.add(schema)
+                # Acquire a Postgres advisory lock for this schema to avoid
+                # concurrent migrations racing in parallel test processes.
+                try:
+                    from django.db import connection as _conn2
+
+                    try:
+                        with _conn2.cursor() as _cursor:
+                            _cursor.execute("SELECT pg_advisory_lock(hashtext(%s))", [schema])
+                    except Exception:
+                        # If advisory locks are unavailable, continue.
+                        pass
+                except Exception:
+                    pass
+
+                try:
+                    call_command("migrate_schemas", tenant=schema, noinput=True)
+                    migrated_schemas.add(schema)
+                finally:
+                    try:
+                        with _conn2.cursor() as _cursor:
+                            try:
+                                _cursor.execute("SELECT pg_advisory_unlock(hashtext(%s))", [schema])
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
 
             transaction.on_commit(_run_migrate)
 
