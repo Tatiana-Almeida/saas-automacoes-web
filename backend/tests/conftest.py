@@ -11,7 +11,10 @@ except Exception:
 
 
 def pytest_ignore_collect(collection_path):
-    """Skip heavy tenant/RBAC tests when running with lightweight SQLite test settings."""
+    """
+    Skip heavy tenant/RBAC tests when running with lightweight SQLite
+    test settings.
+    """
     using_settings_test = os.environ.get("DJANGO_SETTINGS_MODULE", "").endswith(
         "settings_test"
     )
@@ -150,19 +153,41 @@ def clear_cache_between_tests():
 
 @pytest.fixture(autouse=True, scope="session")
 def ensure_test_tenant(django_db_setup, django_db_blocker):
-    """Create a minimal tenant + domain for hostname `testserver` when using Postgres."""
+    """
+    Create a minimal tenant + domain for hostname `testserver` when
+    using Postgres.
+    """
     with django_db_blocker.unblock():
         try:
             from django.db import connection
 
             connection.set_schema_to_public()
-            from apps.tenants.models import Tenant, Domain
+            from apps.tenants.models import Domain
         except Exception:
             return
+        # Prefer using the centralized test helper to create/migrate tenants.
+        try:
+            from backend.tests.helpers.tenant import create_tenant as create_tenant_helper
+        except Exception:
+            create_tenant_helper = None
+
         if not Domain.objects.filter(domain="testserver").exists():
-            tenant = Tenant(schema_name="test_tenant", name="Test Tenant", plan="free")
-            tenant.save()
-            Domain.objects.create(domain="testserver", tenant=tenant)
+            if create_tenant_helper is None:
+                # Helper not importable for some reason; fall back to minimal
+                # creation so tests do not break, but prefer the helper.
+                from apps.tenants.models import Tenant
+
+                tenant = Tenant(schema_name="test_tenant", name="Test Tenant", plan="free")
+                tenant.save()
+                Domain.objects.create(domain="testserver", tenant=tenant)
+            else:
+                # create_tenant runs migrations and ensures schema present
+                create_tenant_helper(
+                    schema_name="test_tenant",
+                    domain="testserver",
+                    name="Test Tenant",
+                    plan="free",
+                )
     return
 
 
