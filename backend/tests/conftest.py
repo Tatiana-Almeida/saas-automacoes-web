@@ -343,30 +343,20 @@ def ensure_tenant_schemas(django_db_blocker):
 
                 # Acquire a Postgres advisory lock for this schema to avoid
                 # concurrent migrations racing in parallel test processes.
+                # Use centralized db_lock utilities to set search_path and
+                # acquire advisory locks where supported.
                 try:
-                    from django.db import connection as _conn2
+                    from tests.utils.db_lock import advisory_lock, set_search_path_on_cursor
 
-                    try:
-                        with _conn2.cursor() as _cursor:
-                            _cursor.execute("SELECT pg_advisory_lock(hashtext(%s))", [schema])
-                    except Exception:
-                        # If advisory locks are unavailable, continue.
-                        pass
+                    set_search_path_on_cursor(schema)
+                    with advisory_lock(schema):
+                        call_command("migrate_schemas", tenant=schema, noinput=True)
+                        migrated_schemas.add(schema)
                 except Exception:
-                    pass
-
-                try:
+                    # If helper import fails or migration fails, let it bubble
+                    # up to the test runner so failures are visible.
                     call_command("migrate_schemas", tenant=schema, noinput=True)
                     migrated_schemas.add(schema)
-                finally:
-                    try:
-                        with _conn2.cursor() as _cursor:
-                            try:
-                                _cursor.execute("SELECT pg_advisory_unlock(hashtext(%s))", [schema])
-                            except Exception:
-                                pass
-                    except Exception:
-                        pass
 
             transaction.on_commit(_run_migrate)
 

@@ -16,6 +16,8 @@ Design notes:
 from typing import Optional
 import logging
 
+from tests.utils.db_lock import advisory_lock, set_search_path_on_cursor
+
 from django.core.management import call_command
 from django.db import connection
 
@@ -92,13 +94,12 @@ def create_tenant(
     # fails the test should fail so migrations are fixed.
     # Ensure the DB connection search path is set to the tenant schema so
     # django-tenants will create migration tables in the correct schema.
-    try:
-        connection.set_schema(schema_name)
-    except Exception:
-        # Some DB backends or connection wrappers may not expose set_schema;
-        # in that case we still attempt to run the management command and
-        # let any errors surface.
-        pass
+        # Ensure the underlying cursor used by the migration command has the
+        # correct search_path, and use an advisory lock to prevent concurrent
+        # migrate runs for this schema.
+        set_search_path_on_cursor(schema_name)
+        with advisory_lock(schema_name):
+            call_command("migrate_schemas", tenant=schema_name, noinput=True)
 
     # Diagnostics: log current schema/search_path before running migrations.
     try:
