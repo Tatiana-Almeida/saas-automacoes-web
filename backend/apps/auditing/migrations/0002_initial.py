@@ -11,33 +11,42 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('auditing', '0001_initial'),
+        ("auditing", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='auditlog',
-            name='user',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL),
+            model_name="auditlog",
+            name="user",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddIndex(
-            model_name='auditlog',
-            index=models.Index(fields=['created_at'], name='auditing_au_created_af2134_idx'),
+            model_name="auditlog",
+            index=models.Index(
+                fields=["created_at"], name="auditing_au_created_af2134_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='auditlog',
-            index=models.Index(fields=['user'], name='auditing_au_user_id_f31292_idx'),
+            model_name="auditlog",
+            index=models.Index(fields=["user"], name="auditing_au_user_id_f31292_idx"),
         ),
         migrations.AddIndex(
-            model_name='auditlog',
-            index=models.Index(fields=['source'], name='auditing_au_source_ad90af_idx'),
+            model_name="auditlog",
+            index=models.Index(fields=["source"], name="auditing_au_source_ad90af_idx"),
         ),
         migrations.AddIndex(
-            model_name='auditlog',
-            index=models.Index(fields=['tenant_schema'], name='auditing_au_tenant__f6956c_idx'),
+            model_name="auditlog",
+            index=models.Index(
+                fields=["tenant_schema"], name="auditing_au_tenant__f6956c_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='auditlog',
-            index=models.Index(fields=['action'], name='auditing_au_action_19c7e5_idx'),
+            model_name="auditlog",
+            index=models.Index(fields=["action"], name="auditing_au_action_19c7e5_idx"),
         ),
     ]

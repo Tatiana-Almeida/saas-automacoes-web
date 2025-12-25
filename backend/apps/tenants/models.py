@@ -11,14 +11,18 @@ class Plan(models.Model):
     def __str__(self):
         return f"{self.code}"
 
+
 class Tenant(TenantMixin):
     name = models.CharField(max_length=200)
-    plan = models.CharField(max_length=50, default='free')
-    plan_ref = models.ForeignKey(Plan, null=True, blank=True, on_delete=models.SET_NULL, related_name='tenants')
+    plan = models.CharField(max_length=50, default="free")
+    plan_ref = models.ForeignKey(
+        Plan, null=True, blank=True, on_delete=models.SET_NULL, related_name="tenants"
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     auto_create_schema = True
+
 
 class Domain(DomainMixin):
     def save(self, *args, **kwargs):
@@ -30,7 +34,8 @@ class Domain(DomainMixin):
         """
         try:
             from django.db import connection
-            prev = getattr(connection, 'schema_name', None)
+
+            prev = getattr(connection, "schema_name", None)
             try:
                 connection.set_schema_to_public()
             except Exception:

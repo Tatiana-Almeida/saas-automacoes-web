@@ -2,8 +2,8 @@ from django.apps import AppConfig
 
 
 class RbacConfig(AppConfig):
-    name = 'apps.rbac'
-    default_auto_field = 'django.db.models.BigAutoField'
+    name = "apps.rbac"
+    default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
         # Import signal handlers to auto-seed RBAC after migrations

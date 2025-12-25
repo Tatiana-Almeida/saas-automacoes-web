@@ -28,7 +28,7 @@ def test_login_sets_cookie_and_me_works_with_cookie(client, gen_password):
     client.cookies["access_token"] = cookies["access_token"].value
     me = client.get("/api/v1/users/me")
     assert me.status_code == 200
-    data = me.json().get('data', {})
+    data = me.json().get("data", {})
     assert data.get("username") == username
 
 
@@ -45,8 +45,8 @@ def test_logout_clears_cookie(client, gen_password):
     )
     assert login.status_code == 200
     client.cookies["access_token"] = login.cookies["access_token"].value
-    payload = login.json().get('data', {})
-    refresh = payload.get('refresh')
+    payload = login.json().get("data", {})
+    refresh = payload.get("refresh")
 
     # Provide refresh if required by your logout implementation
     # Here we post an empty body; adjust if your endpoint expects refresh

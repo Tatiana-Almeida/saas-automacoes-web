@@ -10,43 +10,61 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('tenants', '0001_initial'),
+        ("tenants", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('rbac', '0001_initial'),
+        ("rbac", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='userrole',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='user_roles', to=settings.AUTH_USER_MODEL),
+            model_name="userrole",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="user_roles",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='userpermission',
-            name='permission',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rbac_user_permissions', to='rbac.permission'),
+            model_name="userpermission",
+            name="permission",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="rbac_user_permissions",
+                to="rbac.permission",
+            ),
         ),
         migrations.AddField(
-            model_name='userpermission',
-            name='tenant',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tenant_user_permissions', to='tenants.tenant'),
+            model_name="userpermission",
+            name="tenant",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="tenant_user_permissions",
+                to="tenants.tenant",
+            ),
         ),
         migrations.AddField(
-            model_name='userpermission',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rbac_user_permissions', to=settings.AUTH_USER_MODEL),
+            model_name="userpermission",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="rbac_user_permissions",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='role',
-            name='permissions',
-            field=models.ManyToManyField(blank=True, related_name='roles', to='rbac.permission'),
+            model_name="role",
+            name="permissions",
+            field=models.ManyToManyField(
+                blank=True, related_name="roles", to="rbac.permission"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='userrole',
-            unique_together={('user', 'role', 'tenant')},
+            name="userrole",
+            unique_together={("user", "role", "tenant")},
         ),
         migrations.AlterUniqueTogether(
-            name='userpermission',
-            unique_together={('user', 'permission', 'tenant')},
+            name="userpermission",
+            unique_together={("user", "permission", "tenant")},
         ),
     ]

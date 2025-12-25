@@ -8,10 +8,14 @@ User = get_user_model()
 
 
 @pytest.mark.django_db
-def test_authenticated_request_creates_audit_log_entry(client, gen_password, create_tenant):
+def test_authenticated_request_creates_audit_log_entry(
+    client, gen_password, create_tenant
+):
     # ensure tenant schema exists and domain registered
-    t = create_tenant(schema_name='audit', domain='audit.localhost', name='AuditTenant', plan='free')
-    client.defaults['HTTP_HOST'] = 'audit.localhost'
+    t = create_tenant(
+        schema_name="audit", domain="audit.localhost", name="AuditTenant", plan="free"
+    )
+    client.defaults["HTTP_HOST"] = "audit.localhost"
     username = "audituser"
     password = gen_password()
     User.objects.create_user(username=username, password=password)

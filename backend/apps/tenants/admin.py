@@ -14,20 +14,27 @@ class PlanAdmin(admin.ModelAdmin):
 
 @admin.register(Tenant)
 class TenantAdmin(admin.ModelAdmin):
-    list_display = ("name", "schema_name", "plan", "plan_ref", "is_active", "created_at")
+    list_display = (
+        "name",
+        "schema_name",
+        "plan",
+        "plan_ref",
+        "is_active",
+        "created_at",
+    )
     list_filter = ("is_active",)
     search_fields = ("name", "schema_name")
     actions = ["reset_daily_counters"]
 
     def _daily_limits_for(self, tenant):
-        plan_obj = getattr(tenant, 'plan_ref', None)
+        plan_obj = getattr(tenant, "plan_ref", None)
         try:
-            dl = getattr(plan_obj, 'daily_limits', None)
+            dl = getattr(plan_obj, "daily_limits", None)
             if isinstance(dl, dict):
                 return dl
         except Exception:
             pass
-        plan_code = getattr(plan_obj, 'code', None) or getattr(tenant, 'plan', 'free')
+        plan_code = getattr(plan_obj, "code", None) or getattr(tenant, "plan", "free")
         return settings.TENANT_PLAN_DAILY_LIMITS.get(plan_code, {})
 
     @admin.action(description="Reset daily plan counters for selected tenants")
@@ -35,7 +42,7 @@ class TenantAdmin(admin.ModelAdmin):
         today = timezone.now().date().isoformat()
         total_keys = 0
         for tenant in queryset:
-            schema = getattr(tenant, 'schema_name', None)
+            schema = getattr(tenant, "schema_name", None)
             if not schema:
                 continue
             daily_cfg = self._daily_limits_for(tenant)
@@ -47,11 +54,14 @@ class TenantAdmin(admin.ModelAdmin):
                 except Exception:
                     # ignore errors to proceed with other tenants/categories
                     pass
-        self.message_user(request, f"Daily counters reset for {queryset.count()} tenant(s), {total_keys} category keys cleared.")
+        self.message_user(
+            request,
+            f"Daily counters reset for {queryset.count()} tenant(s), {total_keys} category keys cleared.",
+        )
         try:
             # Audit entry for admin-triggered reset
             AuditLog.objects.create(
-                user=getattr(request, 'user', None),
+                user=getattr(request, "user", None),
                 path="/admin/tenants/reset_daily_counters",
                 method="ADMIN",
                 ip_address=None,

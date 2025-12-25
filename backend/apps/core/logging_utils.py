@@ -14,6 +14,6 @@ class JSONFormatter(logging.Formatter):
         # Optional context
         if record.exc_info:
             payload["exc_info"] = self.formatException(record.exc_info)
-        if hasattr(record, 'request_id'):
-            payload['request_id'] = getattr(record, 'request_id')
+        if hasattr(record, "request_id"):
+            payload["request_id"] = getattr(record, "request_id")
         return json.dumps(payload, ensure_ascii=False)

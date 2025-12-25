@@ -10,7 +10,8 @@ def user_has_permission(user, code: str, tenant=None) -> bool:
         fallback_user_pk = None
         try:
             from apps.core.test_registry import get_user_pk_by_username
-            uname = getattr(user, 'username', None) or getattr(user, 'email', None)
+
+            uname = getattr(user, "username", None) or getattr(user, "email", None)
             fallback_user_pk = get_user_pk_by_username(uname) if uname else None
         except Exception:
             fallback_user_pk = None
@@ -18,13 +19,13 @@ def user_has_permission(user, code: str, tenant=None) -> bool:
             return False
     # Superusers bypass RBAC checks
     try:
-        if getattr(user, 'is_superuser', False):
+        if getattr(user, "is_superuser", False):
             return True
     except Exception:
         pass
     # Staff users also bypass RBAC checks in tests/administrative flows
     try:
-        if getattr(user, 'is_staff', False):
+        if getattr(user, "is_staff", False):
             return True
     except Exception:
         pass
@@ -43,9 +44,11 @@ def user_has_permission(user, code: str, tenant=None) -> bool:
     # (tests create rows inside transactions). Try matching by schema_name.
     try:
         if tenant is not None:
-            schema = getattr(tenant, 'schema_name', None)
+            schema = getattr(tenant, "schema_name", None)
             if schema:
-                qs_up_schema = user.rbac_user_permissions.filter(permission__code=code, tenant__schema_name=schema)
+                qs_up_schema = user.rbac_user_permissions.filter(
+                    permission__code=code, tenant__schema_name=schema
+                )
                 if qs_up_schema.exists():
                     return True
     except Exception:
@@ -66,24 +69,28 @@ def user_has_permission(user, code: str, tenant=None) -> bool:
     # fall back to registry lookup when available.
     user_pk = None
     try:
-        user_pk = int(getattr(user, 'pk'))
+        user_pk = int(getattr(user, "pk"))
     except Exception:
         user_pk = None
     if not user_pk:
         try:
             from apps.core.test_registry import get_user_pk_by_username
-            uname = getattr(user, 'username', None) or getattr(user, 'email', None)
+
+            uname = getattr(user, "username", None) or getattr(user, "email", None)
             user_pk = get_user_pk_by_username(uname) if uname else None
         except Exception:
             user_pk = None
 
     if user_pk:
         from django.apps import apps as django_apps
+
         try:
-            UserPermission = django_apps.get_model('rbac', 'UserPermission')
-            UserRole = django_apps.get_model('rbac', 'UserRole')
+            UserPermission = django_apps.get_model("rbac", "UserPermission")
+            UserRole = django_apps.get_model("rbac", "UserRole")
             # Direct permission by PK
-            up_qs = UserPermission.objects.filter(user_id=user_pk, permission__code=code)
+            up_qs = UserPermission.objects.filter(
+                user_id=user_pk, permission__code=code
+            )
             if tenant is not None:
                 up_qs = up_qs.filter(tenant=tenant)
             if up_qs.exists():
@@ -91,15 +98,21 @@ def user_has_permission(user, code: str, tenant=None) -> bool:
             # Schema-name fallback
             if tenant is not None:
                 try:
-                    schema = getattr(tenant, 'schema_name', None)
+                    schema = getattr(tenant, "schema_name", None)
                     if schema:
-                        up_qs2 = UserPermission.objects.filter(user_id=user_pk, permission__code=code, tenant__schema_name=schema)
+                        up_qs2 = UserPermission.objects.filter(
+                            user_id=user_pk,
+                            permission__code=code,
+                            tenant__schema_name=schema,
+                        )
                         if up_qs2.exists():
                             return True
                 except Exception:
                     pass
             # Via roles by PK
-            ur_qs = UserRole.objects.filter(user_id=user_pk, role__permissions__code=code)
+            ur_qs = UserRole.objects.filter(
+                user_id=user_pk, role__permissions__code=code
+            )
             if tenant is not None:
                 ur_qs = ur_qs.filter(tenant=tenant)
             if ur_qs.exists():
@@ -110,15 +123,14 @@ def user_has_permission(user, code: str, tenant=None) -> bool:
     return False
 
 
-
 class HasPermission(BasePermission):
     """DRF permission that checks view.required_permission or allows if none."""
 
     def has_permission(self, request, view):
-        required = getattr(view, 'required_permission', None)
+        required = getattr(view, "required_permission", None)
         if not required:
             return True
-        tenant = getattr(request, 'tenant', None)
+        tenant = getattr(request, "tenant", None)
         # First, try with the request tenant (normal flow)
         if user_has_permission(request.user, required, tenant):
             return True
@@ -128,11 +140,14 @@ class HasPermission(BasePermission):
         # host-resolved tenant (tests create tenants and domains in local
         # transactions that may differ from the request tenant instance).
         try:
-            kw = getattr(view, 'kwargs', {}) or {}
-            tenant_id = kw.get('tenant') or kw.get('tenant_id') or kw.get('pk') or kw.get('id')
+            kw = getattr(view, "kwargs", {}) or {}
+            tenant_id = (
+                kw.get("tenant") or kw.get("tenant_id") or kw.get("pk") or kw.get("id")
+            )
             if tenant_id:
                 from django.apps import apps as django_apps
-                Tenant = django_apps.get_model('tenants', 'Tenant')
+
+                Tenant = django_apps.get_model("tenants", "Tenant")
                 try:
                     t = Tenant.objects.filter(id=tenant_id).first()
                     if t and user_has_permission(request.user, required, t):
@@ -143,4 +158,4 @@ class HasPermission(BasePermission):
             pass
         # Raise a PermissionDenied with the required permission so the
         # exception handler can include which permission was required.
-        raise PermissionDenied(detail={'permission': required})
+        raise PermissionDenied(detail={"permission": required})

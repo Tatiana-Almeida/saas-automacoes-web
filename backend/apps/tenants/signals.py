@@ -15,7 +15,7 @@ def seed_rbac_on_tenant_create(sender, instance: Tenant, created, **kwargs):
         return
     try:
         # call management command to seed this tenant schema
-        call_command('seed_rbac', '--tenant', instance.schema_name)
+        call_command("seed_rbac", "--tenant", instance.schema_name)
     except Exception:
         # never fail tenant creation due to seeding errors
         return

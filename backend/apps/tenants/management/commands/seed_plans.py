@@ -40,6 +40,7 @@ DEFAULT_PLANS = [
     },
 ]
 
+
 class Command(BaseCommand):
     help = "Seed default plans (free, pro, enterprise) with daily limits"
 

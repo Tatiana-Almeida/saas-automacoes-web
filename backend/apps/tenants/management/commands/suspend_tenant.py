@@ -3,17 +3,17 @@ from apps.tenants.models import Tenant, Domain
 
 
 class Command(BaseCommand):
-    help = 'Suspende um tenant por id, schema_name ou domain'
+    help = "Suspende um tenant por id, schema_name ou domain"
 
     def add_arguments(self, parser):
-        parser.add_argument('--id', type=int, help='ID do tenant')
-        parser.add_argument('--schema', type=str, help='schema_name do tenant')
-        parser.add_argument('--domain', type=str, help='domain do tenant')
+        parser.add_argument("--id", type=int, help="ID do tenant")
+        parser.add_argument("--schema", type=str, help="schema_name do tenant")
+        parser.add_argument("--domain", type=str, help="domain do tenant")
 
     def handle(self, *args, **options):
-        tid = options.get('id')
-        schema = options.get('schema')
-        domain = options.get('domain')
+        tid = options.get("id")
+        schema = options.get("schema")
+        domain = options.get("domain")
 
         tenant = None
         if tid:
@@ -21,12 +21,12 @@ class Command(BaseCommand):
         elif schema:
             tenant = Tenant.objects.filter(schema_name=schema).first()
         elif domain:
-            d = Domain.objects.filter(domain=domain).select_related('tenant').first()
+            d = Domain.objects.filter(domain=domain).select_related("tenant").first()
             tenant = d.tenant if d else None
 
         if not tenant:
-            raise CommandError('Tenant não encontrado')
+            raise CommandError("Tenant não encontrado")
 
         tenant.is_active = False
-        tenant.save(update_fields=['is_active'])
-        self.stdout.write(self.style.SUCCESS(f'Tenant {tenant.id} suspenso'))
+        tenant.save(update_fields=["is_active"])
+        self.stdout.write(self.style.SUCCESS(f"Tenant {tenant.id} suspenso"))

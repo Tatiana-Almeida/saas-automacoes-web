@@ -1,20 +1,23 @@
 from django.core.management.base import BaseCommand, CommandError
 from apps.tenants.models import Tenant, Plan
 
+
 class Command(BaseCommand):
-    help = 'Set the plan for an existing tenant.'
+    help = "Set the plan for an existing tenant."
 
     def add_arguments(self, parser):
-        parser.add_argument('--schema', required=True, help='Schema name of the tenant')
-        parser.add_argument('--plan', required=True, help='Plan to set (free|pro|enterprise)')
+        parser.add_argument("--schema", required=True, help="Schema name of the tenant")
+        parser.add_argument(
+            "--plan", required=True, help="Plan to set (free|pro|enterprise)"
+        )
 
     def handle(self, *args, **options):
-        schema = options['schema']
-        plan_input = options['plan']
+        schema = options["schema"]
+        plan_input = options["plan"]
         try:
             tenant = Tenant.objects.get(schema_name=schema)
         except Tenant.DoesNotExist:
-            raise CommandError(f'Tenant with schema {schema} not found')
+            raise CommandError(f"Tenant with schema {schema} not found")
 
         plan_obj = None
         try:
@@ -35,4 +38,6 @@ class Command(BaseCommand):
             resolved = plan_input
 
         tenant.save()
-        self.stdout.write(self.style.SUCCESS(f'Tenant {schema} plan updated to {resolved}'))
+        self.stdout.write(
+            self.style.SUCCESS(f"Tenant {schema} plan updated to {resolved}")
+        )

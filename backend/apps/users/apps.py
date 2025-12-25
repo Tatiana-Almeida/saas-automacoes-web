@@ -2,8 +2,8 @@ from django.apps import AppConfig
 
 
 class UsersConfig(AppConfig):
-    name = 'apps.users'
-    label = 'users'
+    name = "apps.users"
+    label = "users"
 
     def ready(self):
         # Install a test-only post_save hook to record created users in an

@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
+
 class SmsConfig(AppConfig):
-    name = 'apps.sms'
-    label = 'sms'
+    name = "apps.sms"
+    label = "sms"

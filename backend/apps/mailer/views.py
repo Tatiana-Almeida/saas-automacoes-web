@@ -9,6 +9,7 @@ from drf_yasg.utils import swagger_auto_schema
 from .serializers import EmailSendSerializer
 from .tasks import send_email_message
 
+
 class MailerStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -16,29 +17,26 @@ class MailerStatusView(APIView):
         summary="Email service status",
         description="Returns current Email/Mailer module status",
         responses={200: None},
-        examples=[OpenApiExample('ok', value={"service": "mailer", "status": "ok"})],
-        tags=['email']
+        examples=[OpenApiExample("ok", value={"service": "mailer", "status": "ok"})],
+        tags=["email"],
     )
     def get(self, request):
         return Response({"service": "mailer", "status": "ok"})
 
 
 class MailerSendEmailView(APIView):
-    required_permission = 'email_send'
+    required_permission = "email_send"
     permission_classes = [IsAuthenticated, HasPermission]
-    throttle_scope = 'email_send'
+    throttle_scope = "email_send"
 
     @extend_schema(
         summary="Send email",
         description="Queues an email to be sent",
         request=EmailSendSerializer,
         responses={
-            201: OpenApiExample(
-                'queued',
-                value={"id": "email_123", "status": "queued"}
-            )
+            201: OpenApiExample("queued", value={"id": "email_123", "status": "queued"})
         },
-        tags=['email']
+        tags=["email"],
     )
     @swagger_auto_schema(
         operation_summary="Send email",
@@ -46,13 +44,19 @@ class MailerSendEmailView(APIView):
         responses={
             201: openapi.Response(
                 description="Email queued",
-                examples={"application/json": {"id": "email_123", "status": "queued"}}
+                examples={"application/json": {"id": "email_123", "status": "queued"}},
             )
         },
-        tags=['email']
+        tags=["email"],
     )
     def post(self, request):
         serializer = EmailSendSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        task = send_email_message.delay(serializer.validated_data['to'], serializer.validated_data['subject'], serializer.validated_data['body'])
-        return Response({"id": task.id, "status": "queued"}, status=status.HTTP_201_CREATED)
+        task = send_email_message.delay(
+            serializer.validated_data["to"],
+            serializer.validated_data["subject"],
+            serializer.validated_data["body"],
+        )
+        return Response(
+            {"id": task.id, "status": "queued"}, status=status.HTTP_201_CREATED
+        )

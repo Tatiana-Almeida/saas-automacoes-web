@@ -10,7 +10,7 @@ def seed_rbac_on_migrate(sender, **kwargs):
     """
     try:
         # avoid running during migrations for other apps unnecessarily
-        call_command('seed_rbac')
+        call_command("seed_rbac")
     except Exception:
         # don't fail migrations if seeding fails
         pass

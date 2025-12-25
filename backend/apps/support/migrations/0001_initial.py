@@ -7,26 +7,44 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='SupportTicket',
+            name="SupportTicket",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('email', models.EmailField(blank=True, max_length=254, null=True)),
-                ('subject', models.CharField(max_length=255)),
-                ('message', models.TextField()),
-                ('status', models.CharField(choices=[('open', 'Aberto'), ('in_progress', 'Em andamento'), ('resolved', 'Resolvido')], default='open', max_length=32)),
-                ('response', models.TextField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("email", models.EmailField(blank=True, max_length=254, null=True)),
+                ("subject", models.CharField(max_length=255)),
+                ("message", models.TextField()),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("open", "Aberto"),
+                            ("in_progress", "Em andamento"),
+                            ("resolved", "Resolvido"),
+                        ],
+                        default="open",
+                        max_length=32,
+                    ),
+                ),
+                ("response", models.TextField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Support Ticket',
-                'verbose_name_plural': 'Support Tickets',
-                'ordering': ('-created_at',),
+                "verbose_name": "Support Ticket",
+                "verbose_name_plural": "Support Tickets",
+                "ordering": ("-created_at",),
             },
         ),
     ]

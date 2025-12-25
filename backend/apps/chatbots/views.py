@@ -9,6 +9,7 @@ from drf_yasg.utils import swagger_auto_schema
 from .serializers import ChatbotMessageSerializer
 from .tasks import send_chatbot_message
 
+
 class ChatbotsStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -16,17 +17,17 @@ class ChatbotsStatusView(APIView):
         summary="Chatbots service status",
         description="Returns current Chatbots module status",
         responses={200: None},
-        examples=[OpenApiExample('ok', value={"service": "chatbots", "status": "ok"})],
-        tags=['chatbots']
+        examples=[OpenApiExample("ok", value={"service": "chatbots", "status": "ok"})],
+        tags=["chatbots"],
     )
     def get(self, request):
         return Response({"service": "chatbots", "status": "ok"})
 
 
 class ChatbotSendMessageView(APIView):
-    required_permission = 'chatbots_send'
+    required_permission = "chatbots_send"
     permission_classes = [IsAuthenticated, HasPermission]
-    throttle_scope = 'chatbots_send'
+    throttle_scope = "chatbots_send"
 
     @extend_schema(
         summary="Send message to chatbot",
@@ -34,11 +35,10 @@ class ChatbotSendMessageView(APIView):
         request=ChatbotMessageSerializer,
         responses={
             201: OpenApiExample(
-                'accepted',
-                value={"id": "chatmsg_123", "status": "queued"}
+                "accepted", value={"id": "chatmsg_123", "status": "queued"}
             )
         },
-        tags=['chatbots']
+        tags=["chatbots"],
     )
     @swagger_auto_schema(
         operation_summary="Send message to chatbot",
@@ -46,14 +46,20 @@ class ChatbotSendMessageView(APIView):
         responses={
             201: openapi.Response(
                 description="Chatbot message queued",
-                examples={"application/json": {"id": "chatmsg_123", "status": "queued"}}
+                examples={
+                    "application/json": {"id": "chatmsg_123", "status": "queued"}
+                },
             )
         },
-        tags=['chatbots']
+        tags=["chatbots"],
     )
     def post(self, request):
         serializer = ChatbotMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        task = send_chatbot_message.delay(data['bot_id'], data['message'], data.get('session_id'))
-        return Response({"id": task.id, "status": "queued"}, status=status.HTTP_201_CREATED)
+        task = send_chatbot_message.delay(
+            data["bot_id"], data["message"], data.get("session_id")
+        )
+        return Response(
+            {"id": task.id, "status": "queued"}, status=status.HTTP_201_CREATED
+        )

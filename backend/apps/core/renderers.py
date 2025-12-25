@@ -35,9 +35,14 @@ class StandardJSONRenderer(JSONRenderer):
         # During pytest runs we prefer raw responses to avoid breaking
         # existing tests that expect top-level payloads. Detect pytest by
         # presence of the PYTEST_CURRENT_TEST env var and do not wrap.
-        running_pytest = bool(os.environ.get('PYTEST_CURRENT_TEST'))
+        running_pytest = bool(os.environ.get("PYTEST_CURRENT_TEST"))
 
-        if status_code and 200 <= status_code < 300 and not already_enveloped and not running_pytest:
+        if (
+            status_code
+            and 200 <= status_code < 300
+            and not already_enveloped
+            and not running_pytest
+        ):
             data = {
                 "success": True,
                 "message": "OK",

@@ -5,8 +5,8 @@ from .models import Permission, Role, UserRole, UserPermission
 
 @admin.register(Permission)
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ('code', 'description')
-    search_fields = ('code', 'description')
+    list_display = ("code", "description")
+    search_fields = ("code", "description")
 
 
 class RolePermissionInline(admin.TabularInline):
@@ -16,21 +16,21 @@ class RolePermissionInline(admin.TabularInline):
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-    search_fields = ('name',)
+    list_display = ("name",)
+    search_fields = ("name",)
     inlines = [RolePermissionInline]
-    exclude = ('permissions',)
+    exclude = ("permissions",)
 
 
 @admin.register(UserRole)
 class UserRoleAdmin(admin.ModelAdmin):
-    list_display = ('user', 'role', 'tenant')
-    list_filter = ('tenant', 'role')
-    search_fields = ('user__username', 'role__name')
+    list_display = ("user", "role", "tenant")
+    list_filter = ("tenant", "role")
+    search_fields = ("user__username", "role__name")
 
 
 @admin.register(UserPermission)
 class UserPermissionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'permission', 'tenant')
-    list_filter = ('tenant', 'permission')
-    search_fields = ('user__username', 'permission__code')
+    list_display = ("user", "permission", "tenant")
+    list_filter = ("tenant", "permission")
+    search_fields = ("user__username", "permission__code")

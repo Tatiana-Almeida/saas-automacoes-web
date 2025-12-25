@@ -49,7 +49,12 @@ def create_tenant(
 
     # Create tenant model instance and save it. Tests should provide any
     # additional model fields via tenant_kwargs.
-    tenant = Tenant(schema_name=schema_name, name=name or schema_name, plan=plan, **tenant_kwargs)
+    tenant = Tenant(
+        schema_name=schema_name,
+        name=name or schema_name,
+        plan=plan,
+        **tenant_kwargs,
+    )
     tenant.save()
 
     # All subsequent DB-level operations require an unblocked DB connection.

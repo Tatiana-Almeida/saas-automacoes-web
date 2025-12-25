@@ -14,7 +14,7 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError('Email já cadastrado')
+            raise serializers.ValidationError("Email já cadastrado")
         return value
 
     def validate_password(self, value):
@@ -25,10 +25,12 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        email = validated_data.get('email')
-        nome = validated_data.get('nome_completo', '')
-        password = validated_data['password']
-        user = User.objects.create_user(email=email, nome_completo=nome, password=password)
+        email = validated_data.get("email")
+        nome = validated_data.get("nome_completo", "")
+        password = validated_data["password"]
+        user = User.objects.create_user(
+            email=email, nome_completo=nome, password=password
+        )
         return user
 
 
@@ -46,9 +48,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 self.fields[self.username_field].required = False
         except Exception:
             pass
+
     @classmethod
     def get_token(cls, user):
         from rest_framework_simplejwt.tokens import RefreshToken
+
         token = RefreshToken()
         token["user_id"] = user.id
         return token
@@ -58,15 +62,17 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Also accept an email supplied in the identifier field and map it to the
         # username expected by the parent TokenObtainPairSerializer.
         # Map `username` -> configured username_field if present.
-        if 'username' in attrs and self.username_field not in attrs:
-            attrs[self.username_field] = attrs.pop('username')
+        if "username" in attrs and self.username_field not in attrs:
+            attrs[self.username_field] = attrs.pop("username")
 
         identifier = attrs.get(self.username_field)
-        if identifier and '@' in identifier:
+        if identifier and "@" in identifier:
             user = User.objects.filter(email__iexact=identifier).first()
             if user:
                 # SimpleJWT expects username field; ensure attrs has correct value
-                attrs[self.username_field] = user.get_username() if hasattr(user, 'get_username') else user.email
+                attrs[self.username_field] = (
+                    user.get_username() if hasattr(user, "get_username") else user.email
+                )
         return super().validate(attrs)
 
 
@@ -89,9 +95,13 @@ class ProfileUpdateSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         User = get_user_model()
-        user = self.context.get('request').user
-        if User.objects.filter(email__iexact=value).exclude(pk=getattr(user, 'pk', None)).exists():
-            raise serializers.ValidationError('Email já cadastrado')
+        user = self.context.get("request").user
+        if (
+            User.objects.filter(email__iexact=value)
+            .exclude(pk=getattr(user, "pk", None))
+            .exists()
+        ):
+            raise serializers.ValidationError("Email já cadastrado")
         return value
 
     def validate_password(self, value):
@@ -103,10 +113,10 @@ class ProfileUpdateSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         # update allowed fields
-        for field in ('email', 'nome_completo', 'telefone', 'empresa', 'pais'):
+        for field in ("email", "nome_completo", "telefone", "empresa", "pais"):
             if field in validated_data:
                 setattr(instance, field, validated_data[field])
-        if 'password' in validated_data:
-            instance.set_password(validated_data['password'])
+        if "password" in validated_data:
+            instance.set_password(validated_data["password"])
         instance.save()
         return instance

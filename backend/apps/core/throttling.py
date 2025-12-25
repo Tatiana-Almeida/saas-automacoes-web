@@ -12,7 +12,7 @@ class PlanScopedRateThrottle(ScopedRateThrottle):
     Cache key is namespaced by tenant schema to isolate tenants.
     """
 
-    stats_prefix = 'throttle_stats'
+    stats_prefix = "throttle_stats"
 
     def allow_request(self, request, view):
         # Stash request and view to access tenant in get_rate
@@ -24,29 +24,23 @@ class PlanScopedRateThrottle(ScopedRateThrottle):
         return allowed
 
     def get_rate(self):
-        plan_rates = getattr(settings, 'TENANT_PLAN_THROTTLE_RATES', {})
-        req = getattr(self, '_request', None)
-        tenant = getattr(req, 'tenant', None) if req is not None else None
-        plan = getattr(tenant, 'plan', None)
+        plan_rates = getattr(settings, "TENANT_PLAN_THROTTLE_RATES", {})
+        req = getattr(self, "_request", None)
+        tenant = getattr(req, "tenant", None) if req is not None else None
+        plan = getattr(tenant, "plan", None)
         # Prefer explicit per-plan rates
         if plan and self.scope:
             rate = plan_rates.get(plan, {}).get(self.scope)
-            try:
-                print(f"PlanScopedRateThrottle.get_rate scope={self.scope} plan={plan} rate={rate}")
-            except Exception:
-                pass
+            # Debug prints removed; keep logic intact
             if rate:
                 return rate
 
         # Fallback: use REST_FRAMEWORK DEFAULT_THROTTLE_RATES if configured
         try:
-            rf = getattr(settings, 'REST_FRAMEWORK', None) or {}
-            default_rates = rf.get('DEFAULT_THROTTLE_RATES', {})
+            rf = getattr(settings, "REST_FRAMEWORK", None) or {}
+            default_rates = rf.get("DEFAULT_THROTTLE_RATES", {})
             fallback = default_rates.get(self.scope)
-            try:
-                print(f"PlanScopedRateThrottle.get_rate fallback scope={self.scope} rate={fallback}")
-            except Exception:
-                pass
+            # Debug prints removed; keep fallback logic intact
             if fallback:
                 return fallback
         except Exception:
@@ -65,27 +59,27 @@ class PlanScopedRateThrottle(ScopedRateThrottle):
         ident = self.get_ident(request)
         if ident is None:
             return None
-        tenant = getattr(request, 'tenant', None)
-        schema = getattr(tenant, 'schema_name', 'public')
+        tenant = getattr(request, "tenant", None)
+        schema = getattr(tenant, "schema_name", "public")
         scope = f"{self.scope}:{schema}" if self.scope else f":{schema}"
         return self.cache_format % {
-            'scope': scope,
-            'ident': ident,
+            "scope": scope,
+            "ident": ident,
         }
 
     @classmethod
     def stats_cache_key(cls, schema, scope):
-        scope = scope or 'default'
+        scope = scope or "default"
         return f"{cls.stats_prefix}:{schema}:{scope}"
 
     def record_usage(self, request):
-        tenant = getattr(request, 'tenant', None)
-        schema = getattr(tenant, 'schema_name', 'public')
-        scope = self.scope or 'default'
+        tenant = getattr(request, "tenant", None)
+        schema = getattr(tenant, "schema_name", "public")
+        scope = self.scope or "default"
         key = self.stats_cache_key(schema, scope)
         # Use separate keys and cache atomic increment when available (Redis).
         current = int(time())
-        window = getattr(self, 'duration', None) or 60
+        window = getattr(self, "duration", None) or 60
         count_key = f"{key}:count"
         exp_key = f"{key}:exp"
         try:
@@ -101,7 +95,7 @@ class PlanScopedRateThrottle(ScopedRateThrottle):
                 self.cache.set(exp_key, current + window, timeout=window)
             except Exception:
                 # Fallback to dict-style storage if atomic ops unavailable
-                data = {'count': 1, 'expires_at': current + window}
+                data = {"count": 1, "expires_at": current + window}
                 self.cache.set(key, data, timeout=window)
         else:
             # Window active: increment atomically if supported
@@ -110,9 +104,9 @@ class PlanScopedRateThrottle(ScopedRateThrottle):
             except Exception:
                 # Fallback to dict-style read/modify/write
                 try:
-                    data = self.cache.get(key) or {'count': 0, 'expires_at': expires_at}
-                    data['count'] = int(data.get('count', 0)) + 1
-                    data['expires_at'] = expires_at
+                    data = self.cache.get(key) or {"count": 0, "expires_at": expires_at}
+                    data["count"] = int(data.get("count", 0)) + 1
+                    data["expires_at"] = expires_at
                     self.cache.set(key, data, timeout=max(0, expires_at - current))
                 except Exception:
                     pass

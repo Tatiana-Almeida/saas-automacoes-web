@@ -14,7 +14,7 @@ import psycopg2
 
 
 def parse_settings(path):
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         src = f.read()
     tree = ast.parse(src, filename=path)
     installed_apps = None
@@ -22,18 +22,20 @@ def parse_settings(path):
     for node in tree.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == 'INSTALLED_APPS':
+                if isinstance(target, ast.Name) and target.id == "INSTALLED_APPS":
                     # Expect a list or tuple literal
                     val = node.value
                     apps = []
                     if isinstance(val, (ast.List, ast.Tuple)):
                         for elt in val.elts:
-                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                            if isinstance(elt, ast.Constant) and isinstance(
+                                elt.value, str
+                            ):
                                 apps.append(elt.value)
                             elif isinstance(elt, ast.Str):
                                 apps.append(elt.s)
                     installed_apps = apps
-                if isinstance(target, ast.Name) and target.id == 'AUTH_USER_MODEL':
+                if isinstance(target, ast.Name) and target.id == "AUTH_USER_MODEL":
                     val = node.value
                     if isinstance(val, ast.Constant) and isinstance(val.value, str):
                         auth_user_model = val.value
@@ -58,9 +60,9 @@ def check_table_exists(dsn, table_name):
 
 
 def main():
-    p = argparse.ArgumentParser(description='Django project diagnostic')
-    p.add_argument('--settings', '-s', required=True, help='Path to settings.py')
-    p.add_argument('--db', '-d', required=True, help='Postgres connection string (DSN)')
+    p = argparse.ArgumentParser(description="Django project diagnostic")
+    p.add_argument("--settings", "-s", required=True, help="Path to settings.py")
+    p.add_argument("--db", "-d", required=True, help="Postgres connection string (DSN)")
     args = p.parse_args()
 
     settings_path = args.settings
@@ -74,11 +76,11 @@ def main():
     else:
         print(f"Found INSTALLED_APPS (first 10): {installed_apps[:10]}")
         try:
-            idx_users = installed_apps.index('users')
+            idx_users = installed_apps.index("users")
         except ValueError:
             idx_users = None
         try:
-            idx_admin = installed_apps.index('django.contrib.admin')
+            idx_admin = installed_apps.index("django.contrib.admin")
         except ValueError:
             idx_admin = None
 
@@ -96,15 +98,15 @@ def main():
         print("Could not parse AUTH_USER_MODEL from settings.py")
     else:
         print(f"Found AUTH_USER_MODEL = '{auth_user_model}'")
-        if auth_user_model == 'users.User':
+        if auth_user_model == "users.User":
             print("- AUTH_USER_MODEL: OK")
         else:
             print("- AUTH_USER_MODEL: WRONG (expected 'users.User')")
 
     # Determine expected table name for users.User
-    expected_table = 'users_user'
+    expected_table = "users_user"
     print(f"Checking for table '{expected_table}' in database...")
-    exists = check_table_exists(dsn, f'public.{expected_table}')
+    exists = check_table_exists(dsn, f"public.{expected_table}")
     if exists is True:
         print(f"- Table exists: {expected_table}")
     elif exists is False:
@@ -113,5 +115,5 @@ def main():
         print("- Table check could not be completed due to DB error")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

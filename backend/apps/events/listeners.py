@@ -20,17 +20,21 @@ def _safe_audit_create(**kwargs):
         table = AuditLog._meta.db_table
         sql = f'INSERT INTO public."{table}" ("user_id", "path", "method", "source", "action", "status_code", "tenant_schema", "tenant_id", "ip_address", "created_at", "payload") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING "id"'
         params = (
-            kwargs.get('user').id if kwargs.get('user') else None,
-            kwargs.get('path'),
-            kwargs.get('method'),
-            kwargs.get('source'),
-            kwargs.get('action'),
-            kwargs.get('status_code'),
-            kwargs.get('tenant_schema'),
-            kwargs.get('tenant_id'),
-            kwargs.get('ip_address'),
+            kwargs.get("user").id if kwargs.get("user") else None,
+            kwargs.get("path"),
+            kwargs.get("method"),
+            kwargs.get("source"),
+            kwargs.get("action"),
+            kwargs.get("status_code"),
+            kwargs.get("tenant_schema"),
+            kwargs.get("tenant_id"),
+            kwargs.get("ip_address"),
             timezone.now(),
-            json.dumps(kwargs.get('payload')) if kwargs.get('payload') is not None else None,
+            (
+                json.dumps(kwargs.get("payload"))
+                if kwargs.get("payload") is not None
+                else None
+            ),
         )
         with connection.cursor() as cur:
             cur.execute(sql, params)
@@ -92,60 +96,60 @@ def on_plan_upgraded(payload: Dict[str, Any]):
 
 
 LISTENER_REGISTRY = {
-    'TenantCreated': on_tenant_created,
-    'UserCreated': on_user_created,
-    'PlanUpgraded': on_plan_upgraded,
+    "TenantCreated": on_tenant_created,
+    "UserCreated": on_user_created,
+    "PlanUpgraded": on_plan_upgraded,
     # Stripe webhook-derived events
-    'StripeInvoicePaid': lambda payload: _safe_audit_create(
+    "StripeInvoicePaid": lambda payload: _safe_audit_create(
         user=None,
-        path='/events/StripeInvoicePaid',
-        method='EVENT',
-        source='events',
-        action='event_StripeInvoicePaid',
+        path="/events/StripeInvoicePaid",
+        method="EVENT",
+        source="events",
+        action="event_StripeInvoicePaid",
         status_code=200,
-        tenant_schema=payload.get('tenant_schema'),
-        tenant_id=payload.get('tenant_id'),
+        tenant_schema=payload.get("tenant_schema"),
+        tenant_id=payload.get("tenant_id"),
         ip_address=None,
-        payload={'stripe': payload.get('stripe')},
+        payload={"stripe": payload.get("stripe")},
     ),
-    'StripeSubscriptionUpdated': lambda payload: _safe_audit_create(
+    "StripeSubscriptionUpdated": lambda payload: _safe_audit_create(
         user=None,
-        path='/events/StripeSubscriptionUpdated',
-        method='EVENT',
-        source='events',
-        action='event_StripeSubscriptionUpdated',
+        path="/events/StripeSubscriptionUpdated",
+        method="EVENT",
+        source="events",
+        action="event_StripeSubscriptionUpdated",
         status_code=200,
-        tenant_schema=payload.get('tenant_schema'),
-        tenant_id=payload.get('tenant_id'),
+        tenant_schema=payload.get("tenant_schema"),
+        tenant_id=payload.get("tenant_id"),
         ip_address=None,
-        payload={'stripe': payload.get('stripe')},
+        payload={"stripe": payload.get("stripe")},
     ),
-    'StripeEvent': lambda payload: _safe_audit_create(
+    "StripeEvent": lambda payload: _safe_audit_create(
         user=None,
-        path='/events/StripeEvent',
-        method='EVENT',
-        source='events',
-        action='event_StripeEvent',
+        path="/events/StripeEvent",
+        method="EVENT",
+        source="events",
+        action="event_StripeEvent",
         status_code=200,
-        tenant_schema=payload.get('tenant_schema'),
-        tenant_id=payload.get('tenant_id'),
+        tenant_schema=payload.get("tenant_schema"),
+        tenant_id=payload.get("tenant_id"),
         ip_address=None,
-        payload={'stripe': payload.get('stripe')},
+        payload={"stripe": payload.get("stripe")},
     ),
     # Generic webhook receipt event
-    'WebhookReceived': lambda payload: _safe_audit_create(
+    "WebhookReceived": lambda payload: _safe_audit_create(
         user=None,
-        path='/events/WebhookReceived',
-        method='EVENT',
-        source='events',
-        action='event_WebhookReceived',
+        path="/events/WebhookReceived",
+        method="EVENT",
+        source="events",
+        action="event_WebhookReceived",
         status_code=200,
-        tenant_schema=payload.get('tenant_schema'),
-        tenant_id=payload.get('tenant_id'),
+        tenant_schema=payload.get("tenant_schema"),
+        tenant_id=payload.get("tenant_id"),
         ip_address=None,
         payload={
-            'provider': payload.get('provider'),
-            'payload': payload.get('payload'),
+            "provider": payload.get("provider"),
+            "payload": payload.get("payload"),
         },
     ),
 }

@@ -7,36 +7,49 @@ def _ensure_public_domains_for_testing():
     Safe no-op if tables aren't ready or records already exist.
     """
     import os
+
     # Only attempt in tests or explicit env
-    if not (os.environ.get('PYTEST_CURRENT_TEST') or os.environ.get('DJANGO_TESTING') or os.environ.get('DEBUG') == 'True'):
+    if not (
+        os.environ.get("PYTEST_CURRENT_TEST")
+        or os.environ.get("DJANGO_TESTING")
+        or os.environ.get("DEBUG") == "True"
+    ):
         return
     try:
         from django.db import connection
+
         # Verify required tables exist before touching ORM
         tables = set(connection.introspection.table_names())
-        if not {'tenants_tenant', 'tenants_domain'}.issubset(tables):
+        if not {"tenants_tenant", "tenants_domain"}.issubset(tables):
             return
         from .models import Tenant, Domain
+
         # Ensure a Tenant row for public exists
-        public, _ = Tenant.objects.get_or_create(schema_name='public', defaults={
-            'name': 'Public',
-            'plan': 'free',
-            'is_active': True,
-        })
+        public, _ = Tenant.objects.get_or_create(
+            schema_name="public",
+            defaults={
+                "name": "Public",
+                "plan": "free",
+                "is_active": True,
+            },
+        )
         # Map localhost and testserver to public schema for dev/tests
-        for host in ('localhost', 'testserver'):
+        for host in ("localhost", "testserver"):
             try:
-                Domain.objects.get_or_create(domain=host, defaults={'tenant': public, 'is_primary': True})
+                Domain.objects.get_or_create(
+                    domain=host, defaults={"tenant": public, "is_primary": True}
+                )
             except Exception:
                 # Some versions of DomainMixin may not have is_primary
-                Domain.objects.get_or_create(domain=host, defaults={'tenant': public})
+                Domain.objects.get_or_create(domain=host, defaults={"tenant": public})
     except Exception:
         # Never break app startup due to this helper
         return
 
+
 class TenantsConfig(AppConfig):
-    name = 'apps.tenants'
-    label = 'tenants'
+    name = "apps.tenants"
+    label = "tenants"
 
     def ready(self):
         _ensure_public_domains_for_testing()

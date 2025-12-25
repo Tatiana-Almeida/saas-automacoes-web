@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
+
 class WhatsappConfig(AppConfig):
-    name = 'apps.whatsapp'
-    label = 'whatsapp'
+    name = "apps.whatsapp"
+    label = "whatsapp"

@@ -10,13 +10,13 @@ User = get_user_model()
 @pytest.mark.django_db
 def test_auditing_access_allowed_for_viewer_with_permission(client, gen_password):
     # Seed permission and role
-    p_view = Permission.objects.create(code='view_audit_logs')
-    role_viewer = Role.objects.create(name='Viewer')
+    p_view = Permission.objects.create(code="view_audit_logs")
+    role_viewer = Role.objects.create(name="Viewer")
     role_viewer.permissions.add(p_view)
 
     # Create user and assign role
     pw = gen_password()
-    u = User.objects.create_user(username='viewer', password=pw)
+    u = User.objects.create_user(username="viewer", password=pw)
     UserRole.objects.create(user=u, role=role_viewer)
 
     # Login to get cookie
@@ -36,7 +36,7 @@ def test_auditing_access_allowed_for_viewer_with_permission(client, gen_password
 @pytest.mark.django_db
 def test_auditing_access_denied_without_permission(client, gen_password):
     pw = gen_password()
-    u = User.objects.create_user(username='noperm', password=pw)
+    u = User.objects.create_user(username="noperm", password=pw)
 
     login = client.post(
         "/api/v1/auth/token",
