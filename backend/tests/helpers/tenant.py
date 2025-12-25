@@ -14,6 +14,7 @@ Design notes:
 """
 
 from typing import Optional
+import logging
 
 from django.core.management import call_command
 from django.db import connection
@@ -99,18 +100,30 @@ def create_tenant(
         # let any errors surface.
         pass
 
-    # Ensure search_path is set on the current DB connection cursor as a
-    # safety measure so the management command runs in the correct tenant
-    # schema. Some connection wrappers may require the explicit SQL SET
-    # to affect the underlying connection used by `call_command`.
+    # Diagnostics: log current schema/search_path before running migrations.
     try:
+        logger = logging.getLogger(__name__)
         with connection.cursor() as cursor:
-            # Use parameterized value for the schema name. If the DB
-            # driver does not accept parameters for identifiers this may
-            # still work for common adapters; fall back gracefully.
-            cursor.execute("SET search_path TO %s", [schema_name])
+            try:
+                cursor.execute("SELECT current_schema()")
+                current = cursor.fetchone()
+                logger.debug("pre-migrate current_schema: %r", current)
+            except Exception:
+                logger.debug("pre-migrate: unable to fetch current_schema")
+            try:
+                cursor.execute("SHOW search_path")
+                sp = cursor.fetchone()
+                logger.debug("pre-migrate search_path: %r", sp)
+            except Exception:
+                logger.debug("pre-migrate: unable to fetch search_path")
+            # Ensure search_path is set on the cursor as a safety measure.
+            try:
+                cursor.execute("SET search_path TO %s", [schema_name])
+            except Exception:
+                logger.debug("pre-migrate: SET search_path failed")
     except Exception:
-        # Fall back to relying on connection.set_schema above.
+        # Continue even if diagnostics fail; we don't want to block tests
+        # due to logging/diagnostic issues.
         pass
 
     call_command("migrate_schemas", tenant=schema_name, noinput=True)

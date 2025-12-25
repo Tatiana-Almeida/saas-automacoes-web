@@ -214,6 +214,47 @@ def ensure_test_tenant(django_db_setup, django_db_blocker):
     return
 
 
+@pytest.fixture(scope="session", autouse=False)
+def ensure_tenant_schemas(django_db_blocker):
+    """Session-scoped fixture to pre-create and migrate common tenant schemas.
+
+    This reduces repeated migration overhead during the test session and
+    helps avoid flakiness caused by concurrent on_commit migrations.
+    """
+    with django_db_blocker.unblock():
+        try:
+            create_tenant_helper = None
+            try:
+                from backend.tests.helpers.tenant import create_tenant as create_tenant_helper
+            except Exception:
+                try:
+                    from tests.helpers.tenant import create_tenant as create_tenant_helper
+                except Exception:
+                    create_tenant_helper = None
+
+            # List of tenant schemas commonly used by tests (observed in logs).
+            default_schemas = [
+                ("test_tenant", "testserver"),
+                ("ctenant", "ctenant.localhost"),
+                ("wtenant2", "wtenant2.localhost"),
+                ("atenant", "atenant.localhost"),
+                ("delta", "delta.localhost"),
+            ]
+
+            if create_tenant_helper:
+                for schema, domain in default_schemas:
+                    try:
+                        create_tenant_helper(schema_name=schema, domain=domain)
+                    except Exception:
+                        # Do not fail entire session if creating one tenant fails;
+                        # tests may not depend on every tenant above.
+                        pass
+        except Exception:
+            # If imports fail, do not block tests; leave to per-test helpers.
+            pass
+    return
+
+
 @pytest.fixture(autouse=True, scope="session")
 def auto_migrate_new_tenants(django_db_blocker):
     """Ensure tenant schemas are migrated when tests create tenants.
