@@ -76,6 +76,8 @@ jobs:
 
       - name: Run tests
         run: |
+          # Run smoke tests first to catch tenant/schema issues early
+          pytest backend/tests/test_smoke_tenant.py -q || true
           pytest -q
 
   frontend:
@@ -220,4 +222,6 @@ jobs:
           DEBUG: "True"
           TENANT_DEFAULT_SCHEMA_NAME: public
         run: |
+          # Run smoke test first to validate tenant creation/migrations
+          pytest backend/tests/test_smoke_tenant.py -q || true
           pytest -q

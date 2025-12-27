@@ -35,6 +35,9 @@ def TenantMainMiddleware(get_response):
         import logging
         logger = logging.getLogger("apps.core")
 
+        # Diagnostic: record where host was resolved from for easier debugging
+        host_source = None
+
         # Resolve host from multiple sources with clear priority:
         # 1. Explicit test registry mapping (fast in-process)
         # 2. HTTP header 'X_TENANT_HOST' (useful for tests/scripts)
@@ -42,22 +45,26 @@ def TenantMainMiddleware(get_response):
         # 4. request.get_host() fallback
         host = None
         try:
-            host = (
-                request.META.get("HTTP_X_TENANT_HOST")
-                or request.META.get("X_TENANT_HOST")
-            )
+            val = request.META.get("HTTP_X_TENANT_HOST") or request.META.get("X_TENANT_HOST")
+            if val:
+                host = val
+                host_source = "header:X_TENANT_HOST"
         except Exception:
             host = None
 
         try:
             if not host:
                 host = request.META.get("HTTP_HOST")
+                if host:
+                    host_source = host_source or "meta:HTTP_HOST"
         except Exception:
             pass
 
         try:
             if not host:
                 host = request.get_host()
+                if host:
+                    host_source = host_source or "request:get_host"
         except Exception:
             pass
 
@@ -65,6 +72,12 @@ def TenantMainMiddleware(get_response):
         try:
             if host and ":" in host:
                 host = host.split(":", 1)[0]
+        except Exception:
+            pass
+
+        # Log resolved host info for observability
+        try:
+            logger.info("Tenant resolve: host=%s source=%s", host, host_source)
         except Exception:
             pass
 
@@ -77,6 +90,7 @@ def TenantMainMiddleware(get_response):
                     from django.db import connection
 
                     connection.set_schema(t.schema_name)
+                    logger.info("Set schema for test tenant %s", getattr(t, "schema_name", None))
                 except Exception:
                     logger.exception(
                         "Failed to set schema for test tenant %s", getattr(t, "schema_name", None)

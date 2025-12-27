@@ -6,15 +6,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /code
 
-# system deps (minimal)
+# system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy base requirements and install dev deps if present
 COPY requirements.txt /code/requirements.txt
-RUN pip install --no-cache-dir -r /code/requirements.txt
+COPY requirements-dev.txt /code/requirements-dev.txt
+RUN pip install --no-cache-dir -r /code/requirements.txt || true
+RUN if [ -f /code/requirements-dev.txt ]; then pip install --no-cache-dir -r /code/requirements-dev.txt; fi
 
 COPY . /code/
 
@@ -22,4 +25,4 @@ EXPOSE 8000
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["/bin/sh", "-lc", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
