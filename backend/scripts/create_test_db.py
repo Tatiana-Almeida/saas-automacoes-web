@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 import psycopg2
 
 # Read connection info from env or fallback to sensible defaults
@@ -19,11 +20,9 @@ try:
     row = cur.fetchone()
     if row is None:
         cur.execute(f"CREATE DATABASE {DB_TEMPLATE};")
-        print("DB_CREATED")
     else:
-        print("DB_EXISTS")
+        pass
     cur.close()
     conn.close()
-except Exception as e:
-    print("ERROR", e)
+except Exception:
     sys.exit(1)

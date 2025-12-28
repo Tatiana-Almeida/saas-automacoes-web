@@ -50,4 +50,3 @@ locust -f locustfile.py --host=http://localhost:8000
 - Containerize with provided Dockerfile.
 - Use reverse proxy/ingress (NGINX/Load Balancer) to terminate TLS and forward traffic.
 - Configure health checks and scaling via replicas.
-

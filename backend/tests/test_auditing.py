@@ -1,8 +1,8 @@
 import json
-import pytest
-from django.contrib.auth import get_user_model
 
+import pytest
 from apps.auditing.models import AuditLog
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -12,7 +12,7 @@ def test_authenticated_request_creates_audit_log_entry(
     client, gen_password, create_tenant
 ):
     # ensure tenant schema exists and domain registered
-    t = create_tenant(
+    create_tenant(
         schema_name="audit", domain="audit.localhost", name="AuditTenant", plan="free"
     )
     client.defaults["HTTP_HOST"] = "audit.localhost"

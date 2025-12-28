@@ -3,9 +3,9 @@ import pytest
 
 @pytest.mark.django_db
 def test_admin_csv_export_includes_payload(client):
-    from django.contrib import admin as dj_admin
-    from apps.auditing.models import AuditLog
     from apps.auditing.admin import AuditLogAdmin
+    from apps.auditing.models import AuditLog
+    from django.contrib import admin as dj_admin
 
     a = AuditLog.objects.create(
         path="/x",

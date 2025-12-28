@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import AiStatusView, AiInferView
+
+from .views import AiInferView, AiStatusView
 
 urlpatterns = [
     path("ai/status", AiStatusView.as_view(), name="ai_status"),

@@ -1,6 +1,6 @@
 import pytest
-from django.test import override_settings
 from apps.auditing import tasks as audit_tasks
+from django.test import override_settings
 
 
 @pytest.mark.django_db

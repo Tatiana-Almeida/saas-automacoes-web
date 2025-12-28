@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
+
 from .models import User
 
 
@@ -16,7 +17,15 @@ class UserAdmin(BaseUserAdmin):
         (_("Informações pessoais"), {"fields": ("first_name", "last_name", "role")}),
         (
             _("Permissões"),
-            {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
         ),
         (_("Datas importantes"), {"fields": ("last_login", "date_joined")}),
     )
@@ -26,7 +35,14 @@ class UserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "password1", "password2", "role", "is_staff", "is_active"),
+                "fields": (
+                    "email",
+                    "password1",
+                    "password2",
+                    "role",
+                    "is_staff",
+                    "is_active",
+                ),
             },
         ),
     )
@@ -43,5 +59,5 @@ class UserAdmin(BaseUserAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        form.base_fields.get('email').widget.attrs['autofocus'] = True
+        form.base_fields.get("email").widget.attrs["autofocus"] = True
         return form

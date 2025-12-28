@@ -11,9 +11,9 @@ class UsersConfig(AppConfig):
         # pytest transactions even when DB connection visibility prevents
         # querying them from the request-handling connection.
         try:
+            from apps.core.test_registry import register_user_instance
             from django.contrib.auth import get_user_model
             from django.db.models.signals import post_save
-            from apps.core.test_registry import register_user_instance
 
             User = get_user_model()
             post_save.connect(register_user_instance, sender=User)

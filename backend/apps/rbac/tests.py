@@ -1,8 +1,7 @@
-from django.test import TestCase, Client
-from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
-
+from django.test import Client, TestCase
+from django.urls import reverse
 
 User = get_user_model()
 
@@ -54,7 +53,7 @@ class RbacAdminAPITest(TestCase):
 
     def test_list_roles_permissions(self):
         # ensure the seed ran and ADMIN exists
-        from apps.rbac.models import Role, Permission
+        from apps.rbac.models import Permission, Role
 
         Role.objects.get(name="ADMIN")
         Permission.objects.get(code="manage_users")

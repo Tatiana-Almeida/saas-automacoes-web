@@ -1,0 +1,33 @@
+repos:
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: main
+    hooks:
+      - id: ruff
+        language_version: python3.14
+        args: ["--fix", "--unsafe-fixes"]
+  - repo: https://github.com/psf/black
+    rev: main
+    hooks:
+      - id: black
+        language_version: python3.14
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: main
+    hooks:
+      - id: isort
+        language_version: python3.14
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: main
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+
+  - repo: local
+    # Local hook placeholder for frontend eslint. On Windows 'bash -c' may not exist
+    # so keep this intentionally lightweight; CI runs full frontend lint.
+    hooks:
+      - id: eslint-frontend
+        name: eslint (frontend)
+        entry: python -c "print('Skipping frontend lint in pre-commit; run npm run lint in frontend')"
+        language: system
+        files: ^frontend/

@@ -22,7 +22,7 @@ def _ensure_public_domains_for_testing():
         tables = set(connection.introspection.table_names())
         if not {"tenants_tenant", "tenants_domain"}.issubset(tables):
             return
-        from .models import Tenant, Domain
+        from .models import Domain, Tenant
 
         # Ensure a Tenant row for public exists
         public, _ = Tenant.objects.get_or_create(

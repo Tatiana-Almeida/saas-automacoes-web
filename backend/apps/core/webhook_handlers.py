@@ -1,9 +1,10 @@
 import logging
 from typing import Any, Dict, Optional
-from django.conf import settings
-from django_redis import get_redis_connection
-from django.core.cache import cache
+
 from apps.events.events import emit_event
+from django.conf import settings
+from django.core.cache import cache
+from django_redis import get_redis_connection
 
 logger = logging.getLogger("apps.core.webhooks")
 

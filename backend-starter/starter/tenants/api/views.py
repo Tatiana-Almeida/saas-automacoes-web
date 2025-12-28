@@ -1,7 +1,8 @@
+from starter.api.permissions import IsAdminOrReadOnly
+from starter.api.views import TenantScopedViewSet
+
 from ..models import Tenant
 from .serializers import TenantSerializer
-from starter.api.views import TenantScopedViewSet
-from starter.api.permissions import IsAdminOrReadOnly
 
 
 class TenantViewSet(TenantScopedViewSet):

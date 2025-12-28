@@ -1,19 +1,19 @@
-from rest_framework import mixins, viewsets
-from rest_framework.permissions import AllowAny
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.filters import SearchFilter, OrderingFilter
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
 from django.db.models import Q
-from ..models import Product, Category, Tag
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import mixins, viewsets
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import AllowAny
+from starter.api.permissions import IsAdminOrReadOnly
+from starter.api.views import TenantScopedViewSet
+
+from ..models import Category, Product, Tag
 from .serializers import (
+    CategorySerializer,
     ProductSerializer,
     ProductWriteSerializer,
-    CategorySerializer,
     TagSerializer,
 )
-from starter.api.views import TenantScopedViewSet
-from starter.api.permissions import IsAdminOrReadOnly
 
 
 class CategoryViewSet(TenantScopedViewSet):
@@ -47,11 +47,11 @@ class ProductPublicViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         params = self.request.query_params
-        q = params.get('q')
-        category = params.get('category')
-        tag = params.get('tag')
-        price_min = params.get('price_min')
-        price_max = params.get('price_max')
+        q = params.get("q")
+        category = params.get("category")
+        tag = params.get("tag")
+        price_min = params.get("price_min")
+        price_max = params.get("price_max")
 
         if q:
             qs = qs.filter(Q(name__icontains=q) | Q(description__icontains=q))
@@ -64,7 +64,8 @@ class ProductPublicViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if price_max:
             qs = qs.filter(price__lte=price_max)
         return qs.distinct()
+
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
-    search_fields = ['name', 'description', 'slug']
-    ordering_fields = ['name', 'price', 'created_at']
+    search_fields = ["name", "description", "slug"]
+    ordering_fields = ["name", "price", "created_at"]

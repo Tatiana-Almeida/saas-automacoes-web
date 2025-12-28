@@ -1,8 +1,8 @@
-from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-from .events import emit_event, USER_CREATED
+
+from .events import USER_CREATED, emit_event
 
 User = get_user_model()
 

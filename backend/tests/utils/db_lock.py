@@ -1,8 +1,8 @@
-from contextlib import contextmanager
 import hashlib
 import os
-import tempfile
 import sys
+import tempfile
+from contextlib import contextmanager
 
 from django.db import connection
 
@@ -67,7 +67,9 @@ def advisory_lock(schema_name: str):
             try:
                 with connection.cursor() as cursor:
                     try:
-                        cursor.execute("SELECT pg_advisory_unlock(hashtext(%s))", [schema_name])
+                        cursor.execute(
+                            "SELECT pg_advisory_unlock(hashtext(%s))", [schema_name]
+                        )
                     except Exception:
                         pass
             except Exception:

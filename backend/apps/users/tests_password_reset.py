@@ -1,7 +1,7 @@
-from django.urls import reverse
-from rest_framework.test import APITestCase
-from rest_framework import status
 from django.contrib.auth import get_user_model
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 User = get_user_model()
 
@@ -16,8 +16,8 @@ class PasswordResetTests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         # We can't easily capture the logged reset URL here; instead we will generate token and call confirm
         from django.contrib.auth.tokens import PasswordResetTokenGenerator
-        from django.utils.http import urlsafe_base64_encode
         from django.utils.encoding import force_bytes
+        from django.utils.http import urlsafe_base64_encode
 
         token = PasswordResetTokenGenerator().make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))

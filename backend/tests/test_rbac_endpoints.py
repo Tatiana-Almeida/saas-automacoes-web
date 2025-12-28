@@ -1,9 +1,9 @@
 import json
-import pytest
-from django.contrib.auth import get_user_model
 
-from apps.tenants.models import Tenant, Domain
-from apps.rbac.models import Role, Permission, UserPermission, UserRole
+import pytest
+from apps.rbac.models import Permission, Role, UserPermission, UserRole
+from apps.tenants.models import Domain
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -24,7 +24,7 @@ def test_assign_role_requires_manage_users_permission(
     target = User.objects.create_user(username="target1", password=pw)
 
     # Seed role and permission
-    role = Role.objects.create(name="Viewer")
+    Role.objects.create(name="Viewer")
     perm = Permission.objects.create(code="manage_users")
     UserPermission.objects.create(user=admin, permission=perm, tenant=t)
 
@@ -51,13 +51,11 @@ def test_assign_role_requires_manage_users_permission(
 
 @pytest.mark.django_db
 def test_assign_role_denied_without_permission(client, gen_password, create_tenant):
-    t = create_tenant(
-        schema_name="beta", domain="beta.localhost", name="Beta", plan="free"
-    )
+    create_tenant(schema_name="beta", domain="beta.localhost", name="Beta", plan="free")
     d = Domain.objects.get(domain="beta.localhost")
 
     pw = gen_password()
-    admin = User.objects.create_user(username="admin2", password=pw)
+    User.objects.create_user(username="admin2", password=pw)
     target = User.objects.create_user(username="target2", password=pw)
 
     Role.objects.create(name="Viewer")

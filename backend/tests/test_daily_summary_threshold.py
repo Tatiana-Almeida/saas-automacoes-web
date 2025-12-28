@@ -1,9 +1,9 @@
 import json
+
 import pytest
+from apps.tenants.models import Domain
 from django.contrib.auth import get_user_model
 from django.test import override_settings
-
-from apps.tenants.models import Tenant, Domain
 
 User = get_user_model()
 
@@ -14,12 +14,12 @@ User = get_user_model()
     TENANT_PLAN_DAILY_WARN_THRESHOLD=50,
 )
 def test_near_limit_flag_and_threshold_in_summary(client, create_tenant):
-    t = create_tenant(
+    create_tenant(
         schema_name="thresh", domain="thresh.localhost", name="Thresh", plan="free"
     )
     d = Domain.objects.get(domain="thresh.localhost")
 
-    u = User.objects.create_user(username="admin", password="Test123!", is_staff=True)
+    User.objects.create_user(username="admin", password="Test123!", is_staff=True)
 
     login = client.post(
         "/api/v1/auth/token",

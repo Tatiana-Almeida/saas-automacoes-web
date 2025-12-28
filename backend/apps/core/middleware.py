@@ -1,6 +1,6 @@
 try:
     # module import marker for test-time debug
-    print("CORE_MIDDLEWARE_MODULE_LOADED")
+    pass
 except Exception:
     pass
 
@@ -33,6 +33,7 @@ def TenantMainMiddleware(get_response):
 
     def middleware(request):
         import logging
+
         logger = logging.getLogger("apps.core")
 
         # Diagnostic: record where host was resolved from for easier debugging
@@ -45,7 +46,9 @@ def TenantMainMiddleware(get_response):
         # 4. request.get_host() fallback
         host = None
         try:
-            val = request.META.get("HTTP_X_TENANT_HOST") or request.META.get("X_TENANT_HOST")
+            val = request.META.get("HTTP_X_TENANT_HOST") or request.META.get(
+                "X_TENANT_HOST"
+            )
             if val:
                 host = val
                 host_source = "header:X_TENANT_HOST"
@@ -90,14 +93,18 @@ def TenantMainMiddleware(get_response):
                     from django.db import connection
 
                     connection.set_schema(t.schema_name)
-                    logger.info("Set schema for test tenant %s", getattr(t, "schema_name", None))
+                    logger.info(
+                        "Set schema for test tenant %s", getattr(t, "schema_name", None)
+                    )
                 except Exception:
                     logger.exception(
-                        "Failed to set schema for test tenant %s", getattr(t, "schema_name", None)
+                        "Failed to set schema for test tenant %s",
+                        getattr(t, "schema_name", None),
                     )
         except Exception:
             logger.exception(
-                "Error while resolving tenant from TEST_DOMAIN_REGISTRY for host=%s", host
+                "Error while resolving tenant from TEST_DOMAIN_REGISTRY for host=%s",
+                host,
             )
 
         # If we resolved the tenant via TEST_DOMAIN_REGISTRY, skip the
@@ -159,8 +166,8 @@ def PlanLimitMiddleware(get_response):
     Contadores são armazenados em cache até o fim do dia.
     """
     from django.conf import settings
-    from django.http import JsonResponse
     from django.core.cache import cache
+    from django.http import JsonResponse
     from django.utils import timezone
 
     def _category_from_request(request):
@@ -236,21 +243,17 @@ def PlanLimitMiddleware(get_response):
                     if isinstance(limit, int) and limit >= 0:
                         key = _cache_key(schema, category)
                         try:
-                            print(
-                                f"PLAN_LIMIT check plan={plan_code} category={category} key={key}"
-                            )
+                            pass
                         except Exception:
                             pass
                         count = cache.get(key, 0)
                         try:
-                            print(f"PLAN_LIMIT count={count} limit={limit} for {key}")
+                            pass
                         except Exception:
                             pass
                         if count >= limit:
                             try:
-                                print(
-                                    f"PLAN_LIMIT blocked plan={plan_code} category={category} key={key} count={count} limit={limit}"
-                                )
+                                pass
                             except Exception:
                                 pass
                             return JsonResponse(
@@ -280,7 +283,7 @@ def PlanLimitMiddleware(get_response):
                 ttl = _ttl_until_end_of_day()
                 current = cache.get(key, 0)
                 try:
-                    print(f"PLAN_LIMIT increment key={key} current={current} ttl={ttl}")
+                    pass
                 except Exception:
                     pass
                 cache.set(key, int(current) + 1, timeout=ttl)
@@ -329,7 +332,7 @@ def EnsureTenantSetMiddleware(get_response):
                     pass
                 try:
                     # Print to stdout for pytest capture
-                    print(f"ENSURE_TENANT host={host}")
+                    pass
                 except Exception:
                     pass
                 try:
@@ -347,9 +350,7 @@ def EnsureTenantSetMiddleware(get_response):
                     if host and host in _reg:
                         t = _reg.get(host)
                         try:
-                            print(
-                                f"ENSURE_TENANT registry hit host={host} tenant={getattr(t,'schema_name',None)}"
-                            )
+                            pass
                         except Exception:
                             pass
                     else:
@@ -370,16 +371,12 @@ def EnsureTenantSetMiddleware(get_response):
 
                     try:
                         if t and host in _reg:
-                            print(
-                                f"ENSURE_TENANT set from registry host={host} tenant={getattr(t,'schema_name',None)}"
-                            )
+                            pass
                     except Exception:
                         pass
 
                     try:
-                        print(
-                            f"ENSURE_TENANT found Domain={getattr(d,'domain',None) if 'd' in locals() else None} Tenant={getattr(t,'schema_name',None)}"
-                        )
+                        pass
                     except Exception:
                         pass
 
@@ -399,9 +396,7 @@ def EnsureTenantSetMiddleware(get_response):
                         except Exception:
                             pass
                         try:
-                            print(
-                                f"ENSURE_TENANT set request.tenant={getattr(request.tenant,'schema_name',None)}"
-                            )
+                            pass
                         except Exception:
                             pass
                 except Exception:
@@ -449,9 +444,7 @@ def RequestDebugMiddleware(get_response):
             )
             try:
                 # Also print to stdout so pytest captures immediately
-                print(
-                    f"DBG PRE host={host} resolved={resolved} tenant={getattr(tenant, 'schema_name', None) if tenant else None} schema={schema} path={getattr(request, 'path', None)}"
-                )
+                pass
             except Exception:
                 pass
 
@@ -526,14 +519,9 @@ def RequestDebugMiddleware(get_response):
                     from django.urls import resolve
 
                     try:
-                        r = resolve(getattr(request, "path", "/"))
-                        print(
-                            f"DBG RESOLVE path={getattr(request,'path',None)} -> func={r.func} view_name={getattr(r,'view_name',None)} url_name={getattr(r,'url_name',None)}"
-                        )
-                    except Exception as e:
-                        print(
-                            f"DBG RESOLVE FAILED path={getattr(request,'path',None)} error={e}"
-                        )
+                        resolve(getattr(request, "path", "/"))
+                    except Exception:
+                        pass
                 except Exception:
                     pass
             except Exception:
@@ -550,15 +538,12 @@ def InitialRequestDebugMiddleware(get_response):
 
     def middleware(request):
         try:
-            host = None
             try:
-                host = request.META.get("HTTP_HOST")
+                request.META.get("HTTP_HOST")
             except Exception:
-                host = None
+                pass
             try:
-                print(
-                    f"INITIAL_REQ host={host} tenant_present={hasattr(request, 'tenant')} path={getattr(request,'path',None)}"
-                )
+                pass
             except Exception:
                 pass
         except Exception:

@@ -1,11 +1,11 @@
 import json
+
 import pytest
+from apps.rbac.models import Permission, UserPermission
+from apps.tenants.models import Domain
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.utils import timezone
-
-from apps.tenants.models import Tenant, Domain
-from apps.rbac.models import Permission, UserPermission
 
 User = get_user_model()
 

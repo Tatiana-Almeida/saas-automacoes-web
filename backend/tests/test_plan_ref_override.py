@@ -1,10 +1,10 @@
 import json
+
 import pytest
+from apps.rbac.models import Permission, UserPermission
+from apps.tenants.models import Domain, Plan
 from django.contrib.auth import get_user_model
 from django.test import override_settings
-
-from apps.tenants.models import Tenant, Domain, Plan
-from apps.rbac.models import Permission, UserPermission
 
 User = get_user_model()
 

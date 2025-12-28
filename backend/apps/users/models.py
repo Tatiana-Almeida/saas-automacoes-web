@@ -1,7 +1,34 @@
-from django.db import models
+import uuid
+
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
+from django.db import models
 from django.utils import timezone
+
+
+class EmailVerificationToken(models.Model):
+    """Simple email verification token model.
+
+    Tokens are single-use and expire after a configurable period.
+    This model intentionally keeps fields minimal for an MVP flow.
+    """
+
+    user = models.ForeignKey(
+        "users.User", related_name="email_tokens", on_delete=models.CASCADE
+    )
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [models.Index(fields=["token"])]
+
+    def is_expired(self, hours=48):
+        return timezone.now() > (self.created_at + timezone.timedelta(hours=hours))
+
+    def mark_used(self):
+        self.used = True
+        self.save(update_fields=["used"])
 
 
 class UserManager(BaseUserManager):
@@ -16,41 +43,34 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_user(self, email, nome_completo=None, password=None, **extra_fields):
-        extra_fields.setdefault("is_staff", False)
-        extra_fields.setdefault("is_superuser", False)
-        return self._create_user(email, nome_completo or "", password, **extra_fields)
-
-    def create_user(self, email=None, password=None, **extra_fields):
-        # Allow tests and legacy callers to pass `username=` without `email=`.
-        # If `email` is missing but `username` is provided, derive a safe placeholder.
-        # Do NOT pass `username` into the model if it isn't a defined field.
+    def create_user(
+        self,
+        email=None,
+        password=None,
+        nome_completo=None,
+        **extra_fields,
+    ):
+        # Support callers that provide `username` instead of `email`.
         username = extra_fields.pop("username", None)
         if not email:
             if username:
                 email = f"{username}@noemail.invalid"
             else:
                 raise ValueError("Users must have an email address or username")
+
         email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
+        nome = nome_completo or extra_fields.pop("nome_completo", "") or ""
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        return self._create_user(email, nome, password, **extra_fields)
 
     def create_superuser(
-        self, email, nome_completo=None, password=None, **extra_fields
+        self,
+        email=None,
+        password=None,
+        nome_completo=None,
+        **extra_fields,
     ):
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser must have is_staff=True.")
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser must have is_superuser=True.")
-        return self._create_user(
-            email, nome_completo or "Admin", password, **extra_fields
-        )
-
-    def create_superuser(self, email=None, password=None, **extra_fields):
         username = extra_fields.pop("username", None)
         if not email:
             if username:
@@ -66,7 +86,9 @@ class UserManager(BaseUserManager):
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        return self.create_user(email, password, **extra_fields)
+        return self._create_user(
+            email, nome_completo or "Admin", password, **extra_fields
+        )
 
 
 class User(AbstractBaseUser, PermissionsMixin):

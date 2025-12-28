@@ -1,10 +1,12 @@
 import json
+
 from django.test import Client
 from django.test.utils import override_settings
 
 
 def _stripe_header(secret: str, body: bytes, ts: int) -> str:
-    import hmac, hashlib
+    import hashlib
+    import hmac
 
     payload = (str(ts) + ".").encode("utf-8") + body
     sig = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()

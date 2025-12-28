@@ -1,17 +1,17 @@
-from typing import Any, Dict
 import logging
 import traceback
+from typing import Any, Dict
 
-from rest_framework.views import exception_handler as drf_exception_handler
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import (
-    ValidationError,
-    NotAuthenticated,
-    PermissionDenied,
-    NotFound,
     APIException,
+    NotAuthenticated,
+    NotFound,
+    PermissionDenied,
+    ValidationError,
 )
+from rest_framework.response import Response
+from rest_framework.views import exception_handler as drf_exception_handler
 
 
 def _build_error(code: str, message: str, details: Any = None) -> Dict[str, Any]:

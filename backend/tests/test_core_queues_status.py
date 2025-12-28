@@ -8,14 +8,12 @@ def test_core_queues_status_admin_only(client, gen_password, create_tenant):
     # Create tenant/domain to provide host context
     from apps.tenants.models import Domain
 
-    t = create_tenant(
-        schema_name="acme", domain="acme.localhost", name="Acme", plan="free"
-    )
+    create_tenant(schema_name="acme", domain="acme.localhost", name="Acme", plan="free")
     d = Domain.objects.get(domain="acme.localhost")
 
     # Create staff user (admin)
     pw = gen_password()
-    u = User.objects.create_user(username="admin", password=pw, is_staff=True)
+    User.objects.create_user(username="admin", password=pw, is_staff=True)
 
     # Login to obtain access token
     login = client.post(
@@ -41,13 +39,11 @@ def test_core_queues_status_forbidden_for_non_admin(
     User = get_user_model()
     from apps.tenants.models import Domain
 
-    t = create_tenant(
-        schema_name="acme", domain="acme.localhost", name="Acme", plan="free"
-    )
+    create_tenant(schema_name="acme", domain="acme.localhost", name="Acme", plan="free")
     d = Domain.objects.get(domain="acme.localhost")
 
     pw = gen_password()
-    u = User.objects.create_user(username="user", password=pw, is_staff=False)
+    User.objects.create_user(username="user", password=pw, is_staff=False)
 
     login = client.post(
         "/api/v1/auth/token",

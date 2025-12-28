@@ -1,10 +1,11 @@
 import json
+
 import pytest
-from django.contrib.auth import get_user_model
-from apps.tenants.models import Tenant, Domain
-from apps.rbac.models import Role, Permission, UserPermission
-from apps.auditing.models import AuditLog
 from apps.auditing import tasks as audit_tasks
+from apps.auditing.models import AuditLog
+from apps.rbac.models import Permission, Role, UserPermission
+from apps.tenants.models import Domain
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -19,7 +20,7 @@ def test_rbac_assign_logs_action_and_triggers_alert(monkeypatch, client, create_
     admin = User.objects.create_user(username="admin_rbac", password="Test123!")
     target = User.objects.create_user(username="target_rbac", password="Test123!")
 
-    role = Role.objects.create(name="Viewer")
+    Role.objects.create(name="Viewer")
     p_manage = Permission.objects.create(code="manage_users")
     UserPermission.objects.create(user=admin, permission=p_manage, tenant=t)
 

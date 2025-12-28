@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Tenant, Domain
+
+from .models import Domain, Tenant
 
 
 class TenantCreateSerializer(serializers.Serializer):

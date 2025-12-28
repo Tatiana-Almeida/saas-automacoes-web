@@ -1,10 +1,10 @@
 import json
+
 import pytest
+from apps.rbac.models import Permission, UserPermission
+from apps.tenants.models import Domain
 from django.contrib.auth import get_user_model
 from django.test import override_settings
-
-from apps.tenants.models import Tenant, Domain
-from apps.rbac.models import Permission, UserPermission
 
 User = get_user_model()
 
@@ -65,14 +65,14 @@ def test_daily_limit_enforcement_whatsapp(client, gen_password, create_tenant):
 @pytest.mark.django_db
 def test_throttle_status_includes_daily_usage(client, gen_password, create_tenant):
     # Tenant and domain
-    t = create_tenant(
+    create_tenant(
         schema_name="bravo", domain="bravo.localhost", name="Bravo", plan="free"
     )
     d = Domain.objects.get(domain="bravo.localhost")
 
     # Staff/admin user
     pw = gen_password()
-    u = User.objects.create_user(username="admin_view", password=pw, is_staff=True)
+    User.objects.create_user(username="admin_view", password=pw, is_staff=True)
 
     # Login
     login = client.post(

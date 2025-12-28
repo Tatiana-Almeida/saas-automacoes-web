@@ -1,4 +1,5 @@
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "saas_backend.settings")
@@ -15,13 +16,12 @@ if not password:
     import secrets
 
     password = secrets.token_urlsafe(16)
-    print(f"Generated test user password (store securely): {password}")
 
 user, created = User.objects.get_or_create(username=username)
 user.set_password(password)
 user.save()
 
 if created:
-    print(f"Created user: {username}")
+    pass
 else:
-    print(f"Updated password for user: {username}")
+    pass

@@ -1,9 +1,10 @@
-import pytest
-from django.utils import timezone
-from django.core.management import call_command
 from datetime import timedelta
-from django.contrib.auth import get_user_model
+
+import pytest
 from apps.auditing.models import AuditLog
+from django.contrib.auth import get_user_model
+from django.core.management import call_command
+from django.utils import timezone
 
 User = get_user_model()
 

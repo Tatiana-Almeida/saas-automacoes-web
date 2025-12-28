@@ -1,21 +1,22 @@
-from django.core.mail import send_mail, EmailMultiAlternatives
-from django.template.loader import render_to_string
 from decouple import config
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.response import Response
+from django.core.mail import EmailMultiAlternatives, send_mail
+from django.template.loader import render_to_string
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from ..serializers import (
-    UserSerializer,
-    RegisterSerializer,
-    PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    RegisterSerializer,
+    UserSerializer,
 )
 
 
-@api_view(["GET"]) 
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
     user = request.user
@@ -40,13 +41,20 @@ class LogoutView(APIView):
     def post(self, request):
         refresh_token = request.data.get("refresh")
         if not refresh_token:
-            return Response({"detail": "refresh token é obrigatório"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "refresh token é obrigatório"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()
         except Exception:
-            return Response({"detail": "token inválido"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"detail": "logout efetuado"}, status=status.HTTP_205_RESET_CONTENT)
+            return Response(
+                {"detail": "token inválido"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(
+            {"detail": "logout efetuado"}, status=status.HTTP_205_RESET_CONTENT
+        )
 
 
 class PasswordResetRequestView(APIView):
@@ -61,12 +69,19 @@ class PasswordResetRequestView(APIView):
         uid = result.get("uid")
         token = result.get("token")
         if uid and token:
-            reset_url = request.data.get("reset_base_url") or config('PASSWORD_RESET_BASE_URL', default='')
-            context = {"uid": uid, "token": token, "reset_url": reset_url, "site_name": config('SITE_NAME', default='SaaS')}
-            text_message = render_to_string('emails/password_reset.txt', context)
-            html_message = render_to_string('emails/password_reset.html', context)
+            reset_url = request.data.get("reset_base_url") or config(
+                "PASSWORD_RESET_BASE_URL", default=""
+            )
+            context = {
+                "uid": uid,
+                "token": token,
+                "reset_url": reset_url,
+                "site_name": config("SITE_NAME", default="SaaS"),
+            }
+            text_message = render_to_string("emails/password_reset.txt", context)
+            html_message = render_to_string("emails/password_reset.html", context)
             subject = "Recuperação de senha"
-            from_email = config('DEFAULT_FROM_EMAIL', default=None)
+            from_email = config("DEFAULT_FROM_EMAIL", default=None)
             to = [request.data.get("email")]
             try:
                 msg = EmailMultiAlternatives(subject, text_message, from_email, to)

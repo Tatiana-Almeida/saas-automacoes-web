@@ -1,8 +1,9 @@
 import json
 import logging
 import time
-from django.core.mail import send_mail
+
 from django.conf import settings
+from django.core.mail import send_mail
 
 try:
     import requests
@@ -21,24 +22,33 @@ class WhatsAppService:
           - to: str
           - message: str
         """
-        api_url = config.get('api_url')
-        token = config.get('token')
-        to = config.get('to')
-        message = config.get('message')
+        api_url = config.get("api_url")
+        token = config.get("token")
+        to = config.get("to")
+        message = config.get("message")
         if not api_url or not token or not to or not message:
-            raise ValueError('Invalid WhatsApp configuration')
-        max_attempts = int(config.get('max_attempts', 3))
-        backoff_base = float(config.get('backoff_base', 0.5))  # seconds
+            raise ValueError("Invalid WhatsApp configuration")
+        max_attempts = int(config.get("max_attempts", 3))
+        backoff_base = float(config.get("backoff_base", 0.5))  # seconds
         attempt = 0
         last_exc = None
         start = time.perf_counter()
 
         if not requests:
-            logger.warning('requests not available, simulating WhatsApp call')
+            logger.warning("requests not available, simulating WhatsApp call")
             elapsed_ms = int((time.perf_counter() - start) * 1000)
-            return {"simulated": True, "to": to, "message": message, "attempts": 1, "elapsed_ms": elapsed_ms}
+            return {
+                "simulated": True,
+                "to": to,
+                "message": message,
+                "attempts": 1,
+                "elapsed_ms": elapsed_ms,
+            }
 
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
         payload = json.dumps({"to": to, "message": message})
         status_code = None
 
@@ -52,7 +62,14 @@ class WhatsAppService:
                 total_ms = int((time.perf_counter() - start) * 1000)
                 per_attempt_ms = int((time.perf_counter() - req_start) * 1000)
                 data = resp.json() if resp.content else {}
-                data.update({"status_code": status_code, "attempts": attempt, "elapsed_ms": total_ms, "last_attempt_ms": per_attempt_ms})
+                data.update(
+                    {
+                        "status_code": status_code,
+                        "attempts": attempt,
+                        "elapsed_ms": total_ms,
+                        "last_attempt_ms": per_attempt_ms,
+                    }
+                )
                 return data
             except Exception as e:  # noqa
                 last_exc = e
@@ -75,17 +92,17 @@ class EmailService:
           - subject: str
           - body: str
         """
-        to = config.get('to')
-        subject = config.get('subject', 'Automation Notification')
-        body = config.get('body', '')
+        to = config.get("to")
+        subject = config.get("subject", "Automation Notification")
+        body = config.get("body", "")
         if not to:
             raise ValueError('Email config must include "to"')
         if isinstance(to, str):
             to_list = [to]
         else:
             to_list = list(to)
-        max_attempts = int(config.get('max_attempts', 3))
-        backoff_base = float(config.get('backoff_base', 0.5))
+        max_attempts = int(config.get("max_attempts", 3))
+        backoff_base = float(config.get("backoff_base", 0.5))
         attempt = 0
         last_exc = None
         start = time.perf_counter()
@@ -94,10 +111,22 @@ class EmailService:
             attempt += 1
             try:
                 req_start = time.perf_counter()
-                sent = send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, to_list, fail_silently=False)
+                sent = send_mail(
+                    subject,
+                    body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    to_list,
+                    fail_silently=False,
+                )
                 total_ms = int((time.perf_counter() - start) * 1000)
                 per_attempt_ms = int((time.perf_counter() - req_start) * 1000)
-                return {"sent": sent, "to": to_list, "attempts": attempt, "elapsed_ms": total_ms, "last_attempt_ms": per_attempt_ms}
+                return {
+                    "sent": sent,
+                    "to": to_list,
+                    "attempts": attempt,
+                    "elapsed_ms": total_ms,
+                    "last_attempt_ms": per_attempt_ms,
+                }
             except Exception as e:  # pragma: no cover
                 last_exc = e
                 if attempt >= max_attempts:

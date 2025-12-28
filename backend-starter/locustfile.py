@@ -1,4 +1,5 @@
-from locust import HttpUser, task, between
+from locust import HttpUser, between, task
+
 
 class SaaSUser(HttpUser):
     wait_time = between(1, 3)
@@ -10,6 +11,7 @@ class SaaSUser(HttpUser):
     @task(1)
     def health(self):
         self.client.get("/")
+
 
 # To run:
 # locust -f locustfile.py --host=http://localhost:8000

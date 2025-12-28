@@ -33,6 +33,18 @@ Instale as ferramentas abaixo antes de iniciar (versões recomendadas entre par�
 - Git
 - Python 3.11 — somente se rodar backend fora do Docker (opcional)
 
+Ferramentas de desenvolvedor recomendadas:
+
+- `pre-commit` — facilita aplicar `ruff`, `black` e `isort` localmente antes de commitar. Após instalar (ex.: `pip install pre-commit`), execute `pre-commit install` na raiz do repositório.
+
+Com `pre-commit` instalado, os hooks definidos em `.pre-commit-config.yaml` (ruff/black/isort/prettier) rodarão automaticamente em cada commit.
+
+Para rodar todos os hooks manualmente (útil antes de um PR):
+
+```bash
+pre-commit run --all-files
+```
+
 Observação: o guia assume uso de Docker Compose para Postgres e Redis em dev.
 
 **Seção 3 — Setup Inicial (Docker)**

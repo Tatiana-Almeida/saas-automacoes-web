@@ -1,11 +1,11 @@
 import json
-import pytest
-from django.contrib.auth import get_user_model
 
-from apps.tenants.models import Tenant, Domain
+import pytest
 
 # `create_tenant` fixture is provided via `backend/tests/conftest.py`
 from apps.rbac.models import Permission, UserPermission
+from apps.tenants.models import Domain
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 

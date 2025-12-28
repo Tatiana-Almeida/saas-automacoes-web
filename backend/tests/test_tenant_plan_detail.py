@@ -1,6 +1,6 @@
 import pytest
+from apps.tenants.models import Domain, Plan
 from django.contrib.auth import get_user_model
-from apps.tenants.models import Tenant, Domain, Plan
 
 User = get_user_model()
 

@@ -1,8 +1,7 @@
 import pytest
+from apps.core.middleware import EnforceActiveTenantMiddleware
 from django.http import JsonResponse
 from django.test import RequestFactory
-
-from apps.core.middleware import EnforceActiveTenantMiddleware
 
 
 class DummyTenant:

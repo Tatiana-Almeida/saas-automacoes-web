@@ -1,9 +1,10 @@
 import json
+
 import pytest
-from django.contrib.auth import get_user_model
-from apps.tenants.models import Tenant, Domain
-from apps.rbac.models import Permission, UserPermission
 from apps.auditing.models import AuditLog
+from apps.rbac.models import Permission, UserPermission
+from apps.tenants.models import Domain
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -12,13 +13,13 @@ User = get_user_model()
 def test_audit_middleware_records_login_logout_and_error(
     client, gen_password, create_tenant
 ):
-    t = create_tenant(
+    create_tenant(
         schema_name="gamma", domain="gamma.localhost", name="Gamma", plan="pro"
     )
     d = Domain.objects.get(domain="gamma.localhost")
 
     pw = gen_password()
-    u = User.objects.create_user(username="auditor", password=pw)
+    User.objects.create_user(username="auditor", password=pw)
 
     # Login -> action should be 'login'
     login = client.post(

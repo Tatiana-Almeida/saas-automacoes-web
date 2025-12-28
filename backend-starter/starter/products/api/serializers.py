@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from ..models import Product, Category, Tag
+
+from ..models import Category, Product, Tag
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -24,15 +25,40 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ("id", "name", "slug", "description", "image", "image_thumb", "price", "is_active", "categories", "tags", "created_at", "updated_at")
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "description",
+            "image",
+            "image_thumb",
+            "price",
+            "is_active",
+            "categories",
+            "tags",
+            "created_at",
+            "updated_at",
+        )
         read_only_fields = ("id", "slug", "created_at", "updated_at")
 
 
 class ProductWriteSerializer(serializers.ModelSerializer):
     # Allow writing relations by ids
-    category_ids = serializers.PrimaryKeyRelatedField(source='categories', many=True, queryset=Category.objects.all(), required=False)
-    tag_ids = serializers.PrimaryKeyRelatedField(source='tags', many=True, queryset=Tag.objects.all(), required=False)
+    category_ids = serializers.PrimaryKeyRelatedField(
+        source="categories", many=True, queryset=Category.objects.all(), required=False
+    )
+    tag_ids = serializers.PrimaryKeyRelatedField(
+        source="tags", many=True, queryset=Tag.objects.all(), required=False
+    )
 
     class Meta:
         model = Product
-        fields = ("name", "description", "image", "price", "is_active", "category_ids", "tag_ids")
+        fields = (
+            "name",
+            "description",
+            "image",
+            "price",
+            "is_active",
+            "category_ids",
+            "tag_ids",
+        )

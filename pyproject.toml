@@ -1,7 +1,9 @@
 [tool.ruff]
 line-length = 88
 select = ["E", "F", "W", "C", "B", "I", "T" ]
-extend-ignore = ["E203", "W503"]
+# Removed `extend-ignore` that listed `W503` which older/newer ruff
+# versions may not recognize. Use project-specific ignore in ruff config
+# if necessary.
 
 [tool.black]
 line-length = 88

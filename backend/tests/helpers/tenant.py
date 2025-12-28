@@ -13,24 +13,20 @@ Design notes:
   DB connection and uses Django APIs rather than fragile monkeypatches.
 """
 
-from typing import Optional
 import logging
-import time
 import threading
+import time
+from typing import Optional
 
 from tests.utils.db_lock import advisory_lock, set_search_path_on_cursor
 
 # Event set by the session fixture when shared/public migrations have been applied.
 MIGRATIONS_READY = threading.Event()
 
-from django.core.management import call_command
-import logging
-import time
-
-from django.db import connection, connections, transaction
-
-from apps.tenants.models import Tenant, Domain
 from apps.core import middleware as core_middleware
+from apps.tenants.models import Domain, Tenant
+from django.core.management import call_command
+from django.db import connection, transaction
 
 
 def create_tenant(
@@ -123,9 +119,7 @@ def create_tenant(
             # of later ``relation ... does not exist`` errors.
             try:
                 call_command("migrate", verbosity=0, interactive=False)
-                call_command(
-                    "migrate_schemas", shared=True, noinput=True, verbosity=0
-                )
+                call_command("migrate_schemas", shared=True, noinput=True, verbosity=0)
             except Exception:
                 # Re-raise so calling tests see the underlying migration
                 # failure rather than a later obscure ProgrammingError.
@@ -318,4 +312,3 @@ def create_tenant(
         core_middleware.TEST_DOMAIN_REGISTRY[f"{domain}:80"] = tenant
 
     return tenant
-

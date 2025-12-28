@@ -1,13 +1,12 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from django.conf import settings
-from rest_framework.views import APIView
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework import serializers, status
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import serializers
-import logging
+from rest_framework.views import APIView
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

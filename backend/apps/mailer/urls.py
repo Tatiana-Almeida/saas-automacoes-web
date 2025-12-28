@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import MailerStatusView, MailerSendEmailView
+
+from .views import MailerSendEmailView, MailerStatusView
 
 urlpatterns = [
     path("email/status", MailerStatusView.as_view(), name="email_status"),

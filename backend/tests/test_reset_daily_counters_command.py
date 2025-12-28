@@ -4,8 +4,6 @@ from django.core.management import call_command
 from django.test import override_settings
 from django.utils import timezone
 
-from apps.tenants.models import Tenant
-
 
 @pytest.mark.django_db
 def test_reset_daily_counters_command_with_categories(create_tenant):

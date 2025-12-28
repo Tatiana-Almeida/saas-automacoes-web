@@ -1,18 +1,19 @@
-from rest_framework.permissions import IsAuthenticated
+from apps.auditing.models import AuditLog
 from apps.rbac.permissions import HasPermission
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiExample
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import OpenApiExample, extend_schema
 from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .models import Tenant
 from .serializers import (
-    TenantCreateSerializer,
     TenantActionSerializer,
+    TenantCreateSerializer,
     TenantPlanUpdateSerializer,
 )
-from apps.auditing.models import AuditLog
 
 
 class TenantCreateView(APIView):
@@ -103,7 +104,7 @@ class TenantCreateView(APIView):
         tenant = serializer.save()
         # Emit TenantCreated event
         try:
-            from apps.events.events import emit_event, TENANT_CREATED
+            from apps.events.events import TENANT_CREATED, emit_event
 
             emit_event(
                 TENANT_CREATED,
@@ -199,7 +200,7 @@ class TenantActionView(APIView):
             except Exception:
                 pass
 
-            exists = Tenant.objects.filter(id=tenant_id).exists()
+            Tenant.objects.filter(id=tenant_id).exists()
             tenant = Tenant.objects.get(id=tenant_id)
         except Tenant.DoesNotExist:
             try:
@@ -457,7 +458,7 @@ class TenantPlanUpdateView(APIView):
 
         # Emit PlanUpgraded event
         try:
-            from apps.events.events import emit_event, PLAN_UPGRADED
+            from apps.events.events import PLAN_UPGRADED, emit_event
 
             emit_event(
                 PLAN_UPGRADED,

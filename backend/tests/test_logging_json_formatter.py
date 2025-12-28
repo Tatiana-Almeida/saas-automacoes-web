@@ -1,6 +1,7 @@
 import json
-from apps.core.logging_utils import JSONFormatter
 import logging
+
+from apps.core.logging_utils import JSONFormatter
 
 
 def test_json_formatter_outputs_valid_json():

@@ -1,6 +1,6 @@
 import pytest
-from django.test import override_settings
 from apps.auditing.tasks import export_audit_logs_to_elasticsearch
+from django.test import override_settings
 
 
 @pytest.mark.django_db

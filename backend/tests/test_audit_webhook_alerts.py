@@ -1,8 +1,8 @@
 import pytest
-from django.test import override_settings
-from django.contrib.auth import get_user_model
-from apps.auditing.models import AuditLog
 from apps.auditing import tasks as audit_tasks
+from apps.auditing.models import AuditLog
+from django.contrib.auth import get_user_model
+from django.test import override_settings
 
 User = get_user_model()
 

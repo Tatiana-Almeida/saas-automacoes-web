@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import SmsStatusView, SmsSendMessageView
+
+from .views import SmsSendMessageView, SmsStatusView
 
 urlpatterns = [
     path("sms/status", SmsStatusView.as_view(), name="sms_status"),

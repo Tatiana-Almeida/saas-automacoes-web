@@ -1,6 +1,7 @@
-import json
-import hmac
 import hashlib
+import hmac
+import json
+
 from django.test import Client
 from django.test.utils import override_settings
 

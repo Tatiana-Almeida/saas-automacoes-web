@@ -159,8 +159,9 @@ def _flush_redis_between_tests():
     - Avoids flushing DB index 0 unless explicitly allowed via env `ALLOW_FLUSH_REDIS_DB0`.
     """
     try:
-        from django.conf import settings
         import os
+
+        from django.conf import settings
 
         # Resolve candidate Redis URL from common settings
         url = None
@@ -240,8 +241,8 @@ def _ensure_test_tenant(django_db_setup, django_db_blocker):
     """
     with django_db_blocker.unblock():
         try:
+            from apps.tenants.models import Domain, Tenant
             from django.db import connection
-            from apps.tenants.models import Tenant, Domain
 
             connection.set_schema_to_public()
         except Exception:
@@ -303,9 +304,10 @@ def _ensure_shared_migrations_applied(django_db_setup, django_db_blocker):
         return
     with django_db_blocker.unblock():
         try:
-            from django.core.management import call_command
-            from django import db as django_db
             import time
+
+            from django import db as django_db
+            from django.core.management import call_command
 
             # Ensure standard app migrations are applied
             call_command("migrate", verbosity=0, interactive=False)
@@ -345,8 +347,8 @@ def _ensure_shared_migrations_applied(django_db_setup, django_db_blocker):
             raise
     with django_db_blocker.unblock():
         try:
+            from apps.tenants.models import Domain, Tenant
             from django.db import connection
-            from apps.tenants.models import Tenant, Domain
 
             connection.set_schema_to_public()
         except Exception:

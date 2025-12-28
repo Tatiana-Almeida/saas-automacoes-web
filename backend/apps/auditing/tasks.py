@@ -1,14 +1,14 @@
+import base64
+import json
+import time
+from datetime import timedelta
+from urllib import error, request
+
+from apps.auditing.models import AuditLog
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
-from datetime import timedelta
-import json
-from urllib import request, error
-import base64
-import time
-from django.utils import timezone
-from apps.auditing.models import AuditLog
 
 
 def _es_post_bulk(url: str, ndjson_payload: str, headers=None):
@@ -193,7 +193,7 @@ def send_audit_alert(log_id: int):
     # tests may run concurrently or when other tests leave residual keys.
     action_key = f"audit_alert:quiet:{tenant_schema}:{action}"
     per_log_key = f"audit_alert:quiet:test:{tenant_schema}:{action}:{log_id}"
-    key = action_key if not getattr(settings, "TESTING", False) else per_log_key
+    action_key if not getattr(settings, "TESTING", False) else per_log_key
     if quiet_minutes > 0 and action not in bypass_actions:
         # Always check the action-level key first (legacy behavior) and then
         # the per-log key. Do not gate these checks on an initial per-log

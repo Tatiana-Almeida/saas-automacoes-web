@@ -4,8 +4,8 @@ from django.test import override_settings
 
 @pytest.mark.django_db
 def test_emit_tenant_created_event_creates_auditlog(client):
-    from apps.events.events import emit_event, TENANT_CREATED
     from apps.auditing.models import AuditLog
+    from apps.events.events import TENANT_CREATED, emit_event
 
     with override_settings(CELERY_TASK_ALWAYS_EAGER=True):
         emit_event(TENANT_CREATED, {"tenant_id": 1, "tenant_schema": "acme"})
@@ -14,10 +14,10 @@ def test_emit_tenant_created_event_creates_auditlog(client):
 
 @pytest.mark.django_db
 def test_plan_upgraded_event_emitted_on_plan_change(client, create_tenant):
-    from django.contrib.auth import get_user_model
-    from apps.tenants.models import Tenant, Domain, Plan
-    from apps.rbac.models import Permission, UserPermission
     from apps.auditing.models import AuditLog
+    from apps.rbac.models import Permission, UserPermission
+    from apps.tenants.models import Domain, Plan
+    from django.contrib.auth import get_user_model
 
     User = get_user_model()
     Plan.objects.create(code="pro", name="Pro", daily_limits={})

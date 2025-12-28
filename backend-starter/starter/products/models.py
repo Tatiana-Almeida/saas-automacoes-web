@@ -1,11 +1,12 @@
-from django.db import models
-from decimal import Decimal
-from django.core.validators import MinValueValidator
-from django.utils.text import slugify
-from django.core.files.base import ContentFile
-from io import BytesIO
-from PIL import Image
 import os
+from decimal import Decimal
+from io import BytesIO
+
+from django.core.files.base import ContentFile
+from django.core.validators import MinValueValidator
+from django.db import models
+from django.utils.text import slugify
+from PIL import Image
 
 
 class Category(models.Model):
@@ -47,8 +48,12 @@ class Product(models.Model):
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="products/%Y/%m/", blank=True, null=True)
-    image_thumb = models.ImageField(upload_to="products/thumbs/%Y/%m/", blank=True, null=True)
-    price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0'))])
+    image_thumb = models.ImageField(
+        upload_to="products/thumbs/%Y/%m/", blank=True, null=True
+    )
+    price = models.DecimalField(
+        max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0"))]
+    )
     is_active = models.BooleanField(default=True)
     categories = models.ManyToManyField(Category, related_name="products", blank=True)
     tags = models.ManyToManyField(Tag, related_name="products", blank=True)
@@ -81,16 +86,16 @@ class Product(models.Model):
 
     def _generate_thumbnail(self, size=(300, 300)):
         img = Image.open(self.image)
-        img = img.convert('RGB')
+        img = img.convert("RGB")
         img.thumbnail(size, Image.LANCZOS)
         buffer = BytesIO()
-        img.save(buffer, format='JPEG', quality=85)
+        img.save(buffer, format="JPEG", quality=85)
         buffer.seek(0)
         base = os.path.splitext(os.path.basename(self.image.name))[0]
         filename = f"{base}_thumb.jpg"
         content = ContentFile(buffer.read())
         self.image_thumb.save(filename, content, save=False)
-        super().save(update_fields=['image_thumb'])
+        super().save(update_fields=["image_thumb"])
 
     def __str__(self) -> str:
         return self.name

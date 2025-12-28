@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import WorkflowsStatusView, WorkflowExecuteView
+
+from .views import WorkflowExecuteView, WorkflowsStatusView
 
 urlpatterns = [
     path("workflows/status", WorkflowsStatusView.as_view(), name="workflows_status"),

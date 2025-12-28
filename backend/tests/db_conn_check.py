@@ -8,11 +8,10 @@ def try_conn(host, user, pwd, db):
         )
         cur = conn.cursor()
         cur.execute("SELECT version()")
-        print("OK", host, cur.fetchone())
         cur.close()
         conn.close()
-    except Exception as e:
-        print("ERR", host, type(e).__name__, str(e))
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

@@ -1,15 +1,16 @@
 from django.urls import path
+
 from .views import (
+    BulkRbacApplyView,
+    PermissionDetailView,
+    PermissionListCreateView,
+    RoleDetailView,
+    RoleListCreateView,
+    UserPermissionAssignView,
+    UserPermissionListView,
+    UserPermissionRevokeView,
     UserRoleAssignView,
     UserRoleListView,
-    UserPermissionAssignView,
-    UserPermissionRevokeView,
-    UserPermissionListView,
-    BulkRbacApplyView,
-    RoleListCreateView,
-    RoleDetailView,
-    PermissionListCreateView,
-    PermissionDetailView,
 )
 
 urlpatterns = [

@@ -1,5 +1,6 @@
-from .settings import *
 import os
+
+from .settings import *
 
 # Use SQLite in-memory DB for tests to avoid Postgres driver
 DATABASES = {

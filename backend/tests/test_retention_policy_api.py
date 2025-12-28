@@ -1,14 +1,13 @@
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import override_settings
 
 User = get_user_model()
 
 
 @pytest.mark.django_db
 def test_retention_policy_crud_api(client, create_tenant):
-    from apps.tenants.models import Tenant, Domain
     from apps.rbac.models import Permission, UserPermission
+    from apps.tenants.models import Domain
 
     # Create tenant and user with manage_auditing permission
     t = create_tenant(schema_name="acme", domain="acme.localhost", name="Acme")

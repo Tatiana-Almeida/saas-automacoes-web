@@ -233,7 +233,7 @@ Pop-Location
 	- Instalação: pacote `drf-yasg` já incluso em `requirements.txt`
 	- Observação: o projeto disponibiliza tanto drf-spectacular quanto drf-yasg para flexibilidade.
 	- Exemplos em endpoints RBAC: os endpoints de atribuição de role/permissão e operação em lote incluem parâmetros e payloads de exemplo.
- - Serviços: 
+ - Serviços:
 	 - GET `/api/v1/whatsapp/status` (JWT)
 	 - POST `/api/v1/whatsapp/messages/send` (JWT, throttle per plan)
 	 - GET `/api/v1/email/status` (JWT)

@@ -1,4 +1,5 @@
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "saas_backend.settings")
@@ -16,7 +17,6 @@ if not password:
     import secrets
 
     password = secrets.token_urlsafe(24)
-    print(f"Generated admin password (store securely): {password}")
 
 user, created = User.objects.get_or_create(
     username=username, defaults={"email": email, "is_staff": True, "is_superuser": True}
@@ -26,4 +26,3 @@ if not created:
     user.is_superuser = True
 user.set_password(password)
 user.save()
-print(f"Superuser ready: {username}")

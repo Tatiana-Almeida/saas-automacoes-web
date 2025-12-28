@@ -1,10 +1,11 @@
 from django.urls import path
+
 from .views import (
     HealthView,
-    TenantThrottleStatusView,
+    QueuesStatusView,
     ResetDailyPlanCountersView,
     TenantDailySummaryView,
-    QueuesStatusView,
+    TenantThrottleStatusView,
     WebhookReceiverView,
 )
 

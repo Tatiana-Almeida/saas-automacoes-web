@@ -40,7 +40,7 @@ jobs:
         run: |
           mkdir -p ../docs/api
           cp openapi.yaml ../docs/api/openapi.yaml
-        
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

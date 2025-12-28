@@ -1,6 +1,5 @@
-from typing import Any
 import os
-from django.conf import settings
+from typing import Any
 
 from rest_framework.renderers import JSONRenderer
 

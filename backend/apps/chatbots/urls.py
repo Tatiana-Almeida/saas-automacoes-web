@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import ChatbotsStatusView, ChatbotSendMessageView
+
+from .views import ChatbotSendMessageView, ChatbotsStatusView
 
 urlpatterns = [
     path("chatbots/status", ChatbotsStatusView.as_view(), name="chatbots_status"),

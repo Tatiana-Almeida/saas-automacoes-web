@@ -1,19 +1,22 @@
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 import logging
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiExample
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import (
-    RegisterSerializer,
-    LogoutSerializer,
-    CustomTokenObtainPairSerializer,
-)
+
 from django.conf import settings
+from drf_spectacular.utils import OpenApiExample, extend_schema
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from .serializers import (
+    ConfirmEmailSerializer,
+    CustomTokenObtainPairSerializer,
+    LogoutSerializer,
+    RegisterSerializer,
+)
 
 security_logger = logging.getLogger("apps.security")
 
@@ -63,7 +66,7 @@ class ProfileView(APIView):
         return Response({"data": payload})
 
     def put(self, request):
-        from .serializers import ProfileUpdateSerializer, ProfileSerializer
+        from .serializers import ProfileSerializer, ProfileUpdateSerializer
 
         serializer = ProfileUpdateSerializer(
             data=request.data, context={"request": request}
@@ -80,7 +83,7 @@ class AdminPingView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     @swagger_auto_schema(
-        operation_description="Ping administrativo para verificar autenticação de admin",
+        operation_description="Ping admin (verifica autenticação)",
         responses={
             200: openapi.Schema(
                 type=openapi.TYPE_OBJECT,
@@ -158,6 +161,26 @@ class RegisterView(APIView):
             {"id": user.id, "username": user.get_username()},
             status=status.HTTP_201_CREATED,
         )
+
+
+class ConfirmEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Confirm email using a verification token",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={"token": openapi.Schema(type=openapi.TYPE_STRING)},
+            required=["token"],
+        ),
+        responses={200: "Account activated", 400: "Invalid token"},
+        tags=["auth"],
+    )
+    def post(self, request):
+        serializer = ConfirmEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response({"id": user.id, "email": user.email}, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
@@ -343,7 +366,7 @@ class ThrottledTokenRefreshView(TokenRefreshView):
     throttle_scope = "auth_refresh"
 
     @swagger_auto_schema(
-        operation_description="Refresh: obtém novo token de acesso a partir de um refresh válido",
+        operation_description="Refresh: obtém novo access token a partir de refresh",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={

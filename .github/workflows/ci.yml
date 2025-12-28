@@ -56,6 +56,24 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
+      - name: Run pre-commit hooks (CI)
+        run: |
+          python -m pip install --upgrade pre-commit
+          pre-commit run --all-files || true
+
+      - name: Backend lint/format checks
+        run: |
+          set -e
+          echo "Running backend lint/format checks (ruff, black)"
+          if command -v ruff >/dev/null 2>&1; then
+            ruff check .
+          else
+            echo "ruff not installed; skipping"
+            exit 1
+          fi
+          # Fail the job if Black detects formatting issues
+          python -m black --check .
+
       - name: Run database migrations (retry until available)
         run: |
           set -e
@@ -98,6 +116,22 @@ jobs:
         run: |
           npm ci
 
+      - name: Frontend lint/format checks
+        working-directory: frontend
+        run: |
+          echo "Running frontend lint (eslint) and format checks"
+          if [ -f package.json ]; then
+            if npm run | grep -q "lint"; then
+              npm run lint
+            else
+              echo "No lint script found; skipping"
+            fi
+            # Run Prettier in check mode to fail CI on formatting issues
+            npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,md}"
+          else
+            echo "No frontend package.json; skipping"
+          fi
+
       - name: Typecheck (strict)
         working-directory: frontend
         run: |
@@ -113,7 +147,7 @@ jobs:
           npm run build
 
   security_snyk:
-    name: Security: Snyk
+    name: 'Security: Snyk'
     runs-on: ubuntu-latest
     needs: [backend, frontend]
     steps:
@@ -156,72 +190,4 @@ jobs:
         with:
           name: snyk-report
           path: snyk-report-*.json
-
-# Notes:
-# - Secrets: set `SNYK_TOKEN` in repository secrets to enable Snyk scanning.
-# - CI gates (branch protection) should require `CI`/`backend`/`frontend`/`security_snyk` jobs to pass.name: CI
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-
-jobs:
-  backend-tests:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: saas
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        working-directory: backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-      - name: Run migrations (shared)
-        working-directory: backend
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/saas
-          REDIS_URL: redis://localhost:6379/1
-          DEBUG: "True"
-          TENANT_DEFAULT_SCHEMA_NAME: public
-        run: |
-          python manage.py migrate_schemas --shared
-      - name: Run tests
-        working-directory: backend
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/saas
-          REDIS_URL: redis://localhost:6379/1
-          DEBUG: "True"
-          TENANT_DEFAULT_SCHEMA_NAME: public
-        run: |
-          # Run smoke test first to validate tenant creation/migrations
-          pytest backend/tests/test_smoke_tenant.py -q || true
-          pytest -q
+# End of workflow

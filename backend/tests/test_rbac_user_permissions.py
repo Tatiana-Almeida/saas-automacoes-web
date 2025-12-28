@@ -1,9 +1,9 @@
 import json
-import pytest
-from django.contrib.auth import get_user_model
 
-from apps.tenants.models import Tenant, Domain
-from apps.rbac.models import Role, Permission, UserPermission
+import pytest
+from apps.rbac.models import Permission, UserPermission
+from apps.tenants.models import Domain
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -21,7 +21,7 @@ def test_assign_and_list_user_permission(client, gen_password, create_tenant):
 
     p_manage = Permission.objects.create(code="manage_users")
     p_view_users = Permission.objects.create(code="view_users")
-    p_custom = Permission.objects.create(code="send_whatsapp")
+    Permission.objects.create(code="send_whatsapp")
 
     # grant admin manage_users and view_users in tenant
     UserPermission.objects.create(user=admin, permission=p_manage, tenant=t)
@@ -99,13 +99,11 @@ def test_revoke_user_permission(client, gen_password, create_tenant):
 def test_permission_assign_denied_without_manage_users(
     client, gen_password, create_tenant
 ):
-    t = create_tenant(
-        schema_name="echo", domain="echo.localhost", name="Echo", plan="pro"
-    )
+    create_tenant(schema_name="echo", domain="echo.localhost", name="Echo", plan="pro")
     d = Domain.objects.get(domain="echo.localhost")
 
     pw = gen_password()
-    admin = User.objects.create_user(username="admin_no", password=pw)
+    User.objects.create_user(username="admin_no", password=pw)
     target = User.objects.create_user(username="perm_target2", password=pw)
 
     Permission.objects.create(code="manage_users")

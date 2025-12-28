@@ -1,5 +1,5 @@
+from apps.tenants.models import Domain, Tenant
 from django.core.management.base import BaseCommand, CommandError
-from apps.tenants.models import Tenant, Domain
 
 
 class Command(BaseCommand):

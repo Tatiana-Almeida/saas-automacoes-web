@@ -7,8 +7,7 @@ try:
     conn.autocommit = True
     cur = conn.cursor()
     cur.execute("ALTER ROLE saas_user CREATEDB;")
-    print("ALTER ROLE executed")
     cur.close()
     conn.close()
-except Exception as e:
-    print("ERR", type(e).__name__, e)
+except Exception:
+    pass

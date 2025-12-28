@@ -1,6 +1,7 @@
-from typing import Dict, Any
-from django.db import connection
+from typing import Any, Dict
+
 from apps.auditing.models import AuditLog
+from django.db import connection
 
 
 def _safe_audit_create(**kwargs):
@@ -15,6 +16,7 @@ def _safe_audit_create(**kwargs):
     # connection.search_path is set to a tenant schema.
     try:
         import json
+
         from django.utils import timezone
 
         table = AuditLog._meta.db_table

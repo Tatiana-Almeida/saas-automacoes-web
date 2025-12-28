@@ -1,28 +1,33 @@
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 
 
 class NotificationChannel(models.TextChoices):
-    EMAIL = 'email', 'Email'
-    SMS = 'sms', 'SMS'
-    WHATSAPP = 'whatsapp', 'WhatsApp'
+    EMAIL = "email", "Email"
+    SMS = "sms", "SMS"
+    WHATSAPP = "whatsapp", "WhatsApp"
 
 
 class NotificationStatus(models.TextChoices):
-    PENDING = 'pending', 'Pending'
-    SENT = 'sent', 'Sent'
-    FAILED = 'failed', 'Failed'
+    PENDING = "pending", "Pending"
+    SENT = "sent", "Sent"
+    FAILED = "failed", "Failed"
 
 
 class Notification(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
+    )
     channel = models.CharField(max_length=16, choices=NotificationChannel.choices)
-    to = models.CharField(max_length=255, help_text='Email, phone, or WhatsApp number')
+    to = models.CharField(max_length=255, help_text="Email, phone, or WhatsApp number")
     title = models.CharField(max_length=200)
     body = models.TextField(blank=True)
     payload = models.JSONField(default=dict, blank=True)
-    status = models.CharField(max_length=16, choices=NotificationStatus.choices, default=NotificationStatus.PENDING)
+    status = models.CharField(
+        max_length=16,
+        choices=NotificationStatus.choices,
+        default=NotificationStatus.PENDING,
+    )
     attempts = models.PositiveIntegerField(default=0)
     last_error = models.TextField(blank=True, null=True)
     sent_at = models.DateTimeField(blank=True, null=True)
@@ -37,7 +42,9 @@ class Notification(models.Model):
 
 
 class NotificationLog(models.Model):
-    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='logs')
+    notification = models.ForeignKey(
+        Notification, on_delete=models.CASCADE, related_name="logs"
+    )
     status = models.CharField(max_length=16, choices=NotificationStatus.choices)
     attempt = models.PositiveIntegerField(default=1)
     message = models.TextField(blank=True, null=True)

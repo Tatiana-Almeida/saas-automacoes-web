@@ -4,9 +4,9 @@ from django.test import override_settings
 
 @pytest.mark.django_db
 def test_admin_requeue_dlq_emits_event(client):
-    from django.contrib import admin as dj_admin
-    from apps.auditing.models import AuditLog
     from apps.auditing.admin import AuditLogAdmin
+    from apps.auditing.models import AuditLog
+    from django.contrib import admin as dj_admin
 
     # Create DLQ log for PlanUpgraded
     dlq = AuditLog.objects.create(

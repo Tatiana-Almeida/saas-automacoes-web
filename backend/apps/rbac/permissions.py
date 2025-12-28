@@ -1,5 +1,5 @@
-from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import BasePermission
 
 
 def user_has_permission(user, code: str, tenant=None) -> bool:
@@ -69,7 +69,7 @@ def user_has_permission(user, code: str, tenant=None) -> bool:
     # fall back to registry lookup when available.
     user_pk = None
     try:
-        user_pk = int(getattr(user, "pk"))
+        user_pk = int(user.pk)
     except Exception:
         user_pk = None
     if not user_pk:

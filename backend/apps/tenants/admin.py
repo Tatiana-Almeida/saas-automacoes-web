@@ -1,9 +1,10 @@
-from django.contrib import admin
-from django.utils import timezone
-from django.core.cache import cache
-from django.conf import settings
-from .models import Tenant, Domain, Plan
 from apps.auditing.models import AuditLog
+from django.conf import settings
+from django.contrib import admin
+from django.core.cache import cache
+from django.utils import timezone
+
+from .models import Domain, Plan, Tenant
 
 
 @admin.register(Plan)

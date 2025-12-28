@@ -1,7 +1,8 @@
 from time import time
+
 from django.conf import settings
-from rest_framework.throttling import ScopedRateThrottle
 from django.core.exceptions import ImproperlyConfigured
+from rest_framework.throttling import ScopedRateThrottle
 
 
 class PlanScopedRateThrottle(ScopedRateThrottle):

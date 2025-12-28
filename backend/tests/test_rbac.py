@@ -1,8 +1,8 @@
 import json
-import pytest
-from django.contrib.auth import get_user_model
 
-from apps.rbac.models import Role, Permission, UserRole
+import pytest
+from apps.rbac.models import Permission, Role, UserRole
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -36,7 +36,7 @@ def test_auditing_access_allowed_for_viewer_with_permission(client, gen_password
 @pytest.mark.django_db
 def test_auditing_access_denied_without_permission(client, gen_password):
     pw = gen_password()
-    u = User.objects.create_user(username="noperm", password=pw)
+    User.objects.create_user(username="noperm", password=pw)
 
     login = client.post(
         "/api/v1/auth/token",

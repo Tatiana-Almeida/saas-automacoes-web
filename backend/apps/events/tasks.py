@@ -1,6 +1,6 @@
+from typing import Any, Dict
+
 from celery import shared_task
-from typing import Dict, Any
-from django.utils import timezone
 
 MAX_RETRIES = 3
 RETRY_COUNTDOWN = 5
@@ -30,8 +30,8 @@ def handle_event(self, event_name: str, payload: Dict[str, Any]):
 @shared_task(queue="dlq")
 def dead_letter_event(event_name: str, payload: Dict[str, Any], reason: str = ""):
     # Persist DLQ entry in AuditLog for traceability
-    from django.db import connection
     from apps.auditing.models import AuditLog
+    from django.db import connection
 
     try:
         # Try to force DB search_path to public for the audit write.
@@ -46,6 +46,7 @@ def dead_letter_event(event_name: str, payload: Dict[str, Any], reason: str = ""
         # connection search_path (django-tenants may change it elsewhere).
         try:
             import json
+
             from django.utils import timezone
 
             table = AuditLog._meta.db_table

@@ -1,5 +1,5 @@
+from apps.tenants.models import Plan, Tenant
 from django.core.management.base import BaseCommand, CommandError
-from apps.tenants.models import Tenant, Plan
 
 
 class Command(BaseCommand):

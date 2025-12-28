@@ -9,7 +9,7 @@ Usage:
 """
 import argparse
 import ast
-import sys
+
 import psycopg2
 
 
@@ -54,8 +54,7 @@ def check_table_exists(dsn, table_name):
         cur.close()
         conn.close()
         return bool(row and row[0])
-    except Exception as e:
-        print(f"ERROR: could not connect to database: {e}")
+    except Exception:
         return None
 
 
@@ -68,13 +67,11 @@ def main():
     settings_path = args.settings
     dsn = args.db
 
-    print(f"Reading settings from: {settings_path}")
     installed_apps, auth_user_model = parse_settings(settings_path)
 
     if installed_apps is None:
-        print("Could not parse INSTALLED_APPS from settings.py")
+        pass
     else:
-        print(f"Found INSTALLED_APPS (first 10): {installed_apps[:10]}")
         try:
             idx_users = installed_apps.index("users")
         except ValueError:
@@ -85,34 +82,32 @@ def main():
             idx_admin = None
 
         if idx_users is None:
-            print("- users app: NOT FOUND in INSTALLED_APPS")
+            pass
         elif idx_admin is None:
-            print("- django.contrib.admin: NOT FOUND in INSTALLED_APPS")
+            pass
         else:
             if idx_users < idx_admin:
-                print("- Order: OK — 'users' appears before 'django.contrib.admin'")
+                pass
             else:
-                print("- Order: WRONG — 'users' appears AFTER 'django.contrib.admin'")
+                pass
 
     if auth_user_model is None:
-        print("Could not parse AUTH_USER_MODEL from settings.py")
+        pass
     else:
-        print(f"Found AUTH_USER_MODEL = '{auth_user_model}'")
         if auth_user_model == "users.User":
-            print("- AUTH_USER_MODEL: OK")
+            pass
         else:
-            print("- AUTH_USER_MODEL: WRONG (expected 'users.User')")
+            pass
 
     # Determine expected table name for users.User
     expected_table = "users_user"
-    print(f"Checking for table '{expected_table}' in database...")
     exists = check_table_exists(dsn, f"public.{expected_table}")
     if exists is True:
-        print(f"- Table exists: {expected_table}")
+        pass
     elif exists is False:
-        print(f"- Table NOT found: {expected_table}")
+        pass
     else:
-        print("- Table check could not be completed due to DB error")
+        pass
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from ..models import Order, OrderItem, Cart, CartItem, PaymentTransaction
 from starter.products.api.serializers import ProductSerializer
+
+from ..models import Cart, CartItem, Order, PaymentTransaction
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -25,7 +26,11 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
-    product_id = serializers.PrimaryKeyRelatedField(source='product', queryset=CartItem._meta.get_field('product').remote_field.model.objects.all(), write_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        source="product",
+        queryset=CartItem._meta.get_field("product").remote_field.model.objects.all(),
+        write_only=True,
+    )
 
     class Meta:
         model = CartItem
@@ -56,11 +61,30 @@ class UpdateCartItemSerializer(serializers.Serializer):
 
 
 class CheckoutSerializer(serializers.Serializer):
-    provider = serializers.ChoiceField(choices=['local', 'stripe', 'paypal'], default='local')
+    provider = serializers.ChoiceField(
+        choices=["local", "stripe", "paypal"], default="local"
+    )
 
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentTransaction
-        fields = ("id", "order", "provider", "status", "amount", "reference", "message", "payload", "created_at")
-        read_only_fields = ("id", "status", "reference", "message", "payload", "created_at")
+        fields = (
+            "id",
+            "order",
+            "provider",
+            "status",
+            "amount",
+            "reference",
+            "message",
+            "payload",
+            "created_at",
+        )
+        read_only_fields = (
+            "id",
+            "status",
+            "reference",
+            "message",
+            "payload",
+            "created_at",
+        )

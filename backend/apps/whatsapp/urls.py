@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import WhatsappStatusView, WhatsappSendMessageView
+
+from .views import WhatsappSendMessageView, WhatsappStatusView
 
 urlpatterns = [
     path("whatsapp/status", WhatsappStatusView.as_view(), name="whatsapp_status"),

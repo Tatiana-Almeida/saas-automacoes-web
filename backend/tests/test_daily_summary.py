@@ -1,21 +1,19 @@
 import json
-import pytest
-from django.contrib.auth import get_user_model
 
-from apps.tenants.models import Tenant, Domain
+import pytest
+from apps.tenants.models import Domain
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 
 @pytest.mark.django_db
 def test_daily_summary_endpoint(client, gen_password, create_tenant):
-    t = create_tenant(
-        schema_name="acme", domain="acme.localhost", name="ACME", plan="free"
-    )
+    create_tenant(schema_name="acme", domain="acme.localhost", name="ACME", plan="free")
     d = Domain.objects.get(domain="acme.localhost")
 
     pw = gen_password()
-    u = User.objects.create_user(username="admin_sum", password=pw, is_staff=True)
+    User.objects.create_user(username="admin_sum", password=pw, is_staff=True)
 
     login = client.post(
         "/api/v1/auth/token",

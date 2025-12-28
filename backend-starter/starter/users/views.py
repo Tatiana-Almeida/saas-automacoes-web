@@ -3,12 +3,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 
-@api_view(["GET"]) 
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
     user = request.user
-    return Response({
-        "id": user.id,
-        "username": user.get_username(),
-        "email": getattr(user, 'email', ''),
-    })
+    return Response(
+        {
+            "id": user.id,
+            "username": user.get_username(),
+            "email": getattr(user, "email", ""),
+        }
+    )

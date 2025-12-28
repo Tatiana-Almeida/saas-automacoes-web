@@ -1,7 +1,5 @@
 import threading
 
-import pytest
-
 
 def _create_tenant_concurrently(create_tenant, schema_name, domain):
     # Lightweight wrapper used by threads; uses the test fixture helper.

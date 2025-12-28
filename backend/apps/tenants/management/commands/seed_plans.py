@@ -1,5 +1,5 @@
-from django.core.management.base import BaseCommand
 from apps.tenants.models import Plan
+from django.core.management.base import BaseCommand
 
 DEFAULT_PLANS = [
     {

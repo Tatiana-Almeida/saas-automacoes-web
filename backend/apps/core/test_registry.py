@@ -14,7 +14,7 @@ def register_user_instance(instance, created, **kwargs):
     if not uname:
         return
     try:
-        TEST_USER_REGISTRY[uname.lower()] = int(getattr(instance, "pk"))
+        TEST_USER_REGISTRY[uname.lower()] = int(instance.pk)
     except Exception:
         pass
 

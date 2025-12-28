@@ -1,9 +1,10 @@
 import json
+
 import pytest
-from django.contrib.auth import get_user_model
-from apps.tenants.models import Tenant, Domain, Plan
-from apps.auditing.models import AuditLog
 from apps.auditing import tasks as audit_tasks
+from apps.auditing.models import AuditLog
+from apps.tenants.models import Plan
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 

@@ -1,7 +1,7 @@
-from django.urls import reverse
-from rest_framework.test import APITestCase
-from rest_framework import status
 from apps.support.models import SupportTicket
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 
 class SupportTicketAPITest(APITestCase):

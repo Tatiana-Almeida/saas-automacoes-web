@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.conf import settings
-from django.utils import timezone
 from django.core.cache import cache
+from django.utils import timezone
 
 
 def compute_daily_near_limits(schema: str, daily_cfg: dict, warn_threshold: int):

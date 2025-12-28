@@ -1,24 +1,24 @@
+from apps.auditing.models import AuditLog
 from django.contrib.auth import get_user_model
-from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+from rest_framework.views import APIView
 
-from .models import UserRole, Role, Permission
-from .serializers import (
-    AssignRoleSerializer,
-    UserRoleSerializer,
-    AssignPermissionSerializer,
-    UserPermissionSerializer,
-    BulkRbacOperationSerializer,
-    RoleSerializer,
-    PermissionSerializer,
-)
+from .models import Permission, Role, UserRole
 from .permissions import HasPermission
-from apps.auditing.models import AuditLog
+from .serializers import (
+    AssignPermissionSerializer,
+    AssignRoleSerializer,
+    BulkRbacOperationSerializer,
+    PermissionSerializer,
+    RoleSerializer,
+    UserPermissionSerializer,
+    UserRoleSerializer,
+)
 
 User = get_user_model()
 
@@ -417,8 +417,7 @@ class BulkRbacApplyView(APIView):
     )
     @swagger_auto_schema(
         operation_description=(
-            "Aplica operações RBAC em lote (atribuições e "
-            "revogações)"
+            "Aplica operações RBAC em lote (atribuições e " "revogações)"
         ),
         request_body=BulkRbacOperationSerializer,
         responses={
@@ -452,8 +451,9 @@ class BulkRbacApplyView(APIView):
         ser.is_valid(raise_exception=True)
         payload = ser.validated_data
 
-        from .models import Role, Permission, UserRole, UserPermission
         from django.contrib.auth import get_user_model
+
+        from .models import Permission, Role, UserPermission, UserRole
 
         User = get_user_model()
         tenant = getattr(request, "tenant", None)

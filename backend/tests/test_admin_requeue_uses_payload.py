@@ -4,9 +4,9 @@ from django.test import override_settings
 
 @pytest.mark.django_db
 def test_admin_requeue_dlq_uses_stored_payload(client):
-    from django.contrib import admin as dj_admin
-    from apps.auditing.models import AuditLog
     from apps.auditing.admin import AuditLogAdmin
+    from apps.auditing.models import AuditLog
+    from django.contrib import admin as dj_admin
 
     # DLQ log where row has tenant_schema=acme but payload overrides to omega
     dlq = AuditLog.objects.create(

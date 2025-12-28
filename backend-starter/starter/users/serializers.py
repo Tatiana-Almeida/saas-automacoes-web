@@ -1,9 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.validators import validate_email
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from rest_framework import serializers
 
 User = get_user_model()
@@ -14,7 +14,15 @@ token_generator = PasswordResetTokenGenerator()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "role", "is_staff", "is_active"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_staff",
+            "is_active",
+        ]
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -75,6 +83,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         new_password = self.validated_data["new_password"]
         try:
             from django.utils.http import urlsafe_base64_decode
+
             user_id = force_str(urlsafe_base64_decode(uid))
             user = User.objects.get(pk=user_id)
         except Exception:

@@ -1,9 +1,9 @@
 import json
+
 import pytest
+from apps.tenants.models import Domain
 from django.contrib.auth import get_user_model
 from django.test import override_settings
-
-from apps.tenants.models import Tenant, Domain
 
 User = get_user_model()
 
@@ -17,12 +17,12 @@ User = get_user_model()
     }
 )
 def test_daily_summary_includes_percent_used(client, create_tenant):
-    t = create_tenant(
+    create_tenant(
         schema_name="percent", domain="percent.localhost", name="Percent", plan="free"
     )
     d = Domain.objects.get(domain="percent.localhost")
 
-    u = User.objects.create_user(username="admin", password="Test123!", is_staff=True)
+    User.objects.create_user(username="admin", password="Test123!", is_staff=True)
 
     login = client.post(
         "/api/v1/auth/token",

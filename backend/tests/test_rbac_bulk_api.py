@@ -1,9 +1,9 @@
 import json
-import pytest
-from django.contrib.auth import get_user_model
 
+import pytest
+from apps.rbac.models import Permission, Role, UserPermission, UserRole
 from apps.tenants.models import Domain
-from apps.rbac.models import Role, Permission, UserPermission, UserRole
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -23,7 +23,7 @@ def test_bulk_rbac_apply_success(client, create_tenant):
     Role.objects.create(name="Viewer")
     Role.objects.create(name="Operator")
     p_manage = Permission.objects.create(code="manage_users")
-    p_send = Permission.objects.create(code="send_sms")
+    Permission.objects.create(code="send_sms")
 
     # Grant admin manage_users in tenant
     UserPermission.objects.create(user=admin, permission=p_manage, tenant=t)
@@ -80,7 +80,7 @@ def test_bulk_rbac_apply_partial_errors(client, create_tenant):
     d = Domain.objects.get(domain="sigma.localhost")
 
     admin = User.objects.create_user(username="bulk_admin2", password="Test123!")
-    u1 = User.objects.create_user(username="bulk_err_u1", password="Test123!")
+    User.objects.create_user(username="bulk_err_u1", password="Test123!")
 
     Role.objects.create(name="Viewer")
     p_manage = Permission.objects.create(code="manage_users")

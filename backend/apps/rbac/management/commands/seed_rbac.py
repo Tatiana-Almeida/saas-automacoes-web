@@ -1,10 +1,9 @@
-from django.core.management.base import BaseCommand
+from contextlib import contextmanager
 
 from django.core.management.base import BaseCommand
-from contextlib import contextmanager
 from django.db import transaction
 
-from ...models import Role, Permission
+from ...models import Permission, Role
 
 
 def _noop_context(*args, **kwargs):
@@ -36,14 +35,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # Prepare context manager for tenant schema switching if available
         try:
-            from django_tenants.utils import schema_context, get_public_schema_name
+            from django_tenants.utils import get_public_schema_name, schema_context
         except Exception:
             schema_context = _noop_context
             try:
                 # best-effort fallback
                 from django_tenants.utils import get_public_schema_name
             except Exception:
-                get_public_schema_name = lambda: "public"
+
+                def get_public_schema_name():
+                    return "public"
 
         tenant_arg = options.get("tenant")
         all_tenants = options.get("all_tenants")
@@ -111,11 +112,10 @@ class Command(BaseCommand):
 
                 Tenant = django_apps.get_model("tenants", "Tenant")
                 try:
-                    from django_tenants.utils import schema_context as _schema_context
+                    pass
 
-                    schema_ctx = _schema_context
                 except Exception:
-                    schema_ctx = schema_context
+                    pass
                 for t in Tenant.objects.all():
                     try:
                         seed_in_schema(t.schema_name)

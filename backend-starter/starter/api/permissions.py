@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
 class IsAdminOrReadOnly(BasePermission):
@@ -8,4 +8,4 @@ class IsAdminOrReadOnly(BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        return getattr(user, 'role', '') == 'admin'
+        return getattr(user, "role", "") == "admin"

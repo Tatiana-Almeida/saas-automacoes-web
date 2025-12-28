@@ -1,7 +1,5 @@
 import threading
 
-import pytest
-
 
 def _create_tenant_concurrently(create_tenant, schema_name, domain):
     # Lightweight wrapper used by threads; uses the test fixture helper.
@@ -20,7 +18,11 @@ def test_create_tenants_concurrently(create_tenant):
     for i in range(3):
         t = threading.Thread(
             target=_create_tenant_concurrently,
-            args=(create_tenant, f"ctenant_thread_{i}", f"ctenant_thread_{i}.localhost"),
+            args=(
+                create_tenant,
+                f"ctenant_thread_{i}",
+                f"ctenant_thread_{i}.localhost",
+            ),
         )
         threads.append(t)
         t.start()
@@ -36,7 +38,14 @@ def test_create_tenants_concurrently(create_tenant):
 
         procs = []
         for i in range(2):
-            p = Process(target=_create_tenant_concurrently, args=(create_tenant, f"ctenant_proc_{i}", f"ctenant_proc_{i}.localhost"))
+            p = Process(
+                target=_create_tenant_concurrently,
+                args=(
+                    create_tenant,
+                    f"ctenant_proc_{i}",
+                    f"ctenant_proc_{i}.localhost",
+                ),
+            )
             procs.append(p)
             p.start()
 

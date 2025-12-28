@@ -1,5 +1,5 @@
-from .utils import get_client_ip
 from .models import AuditLog
+from .utils import get_client_ip
 
 
 class AuditMiddleware:

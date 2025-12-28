@@ -1,13 +1,12 @@
 import pytest
-from django.test import override_settings
-from django.utils import timezone
 from django.core.cache import cache
+from django.test import override_settings
 
 
 @pytest.mark.django_db
 def test_alert_quiet_period_suppresses_second_send(monkeypatch):
-    from apps.auditing.models import AuditLog
     from apps.auditing import tasks as audit_tasks
+    from apps.auditing.models import AuditLog
 
     # Simulate successful webhook
     monkeypatch.setattr(audit_tasks, "_post_webhook", lambda url, payload: (200, "ok"))
@@ -45,8 +44,8 @@ def test_alert_quiet_period_suppresses_second_send(monkeypatch):
 
 @pytest.mark.django_db
 def test_alert_quiet_period_different_action_not_suppressed(monkeypatch):
-    from apps.auditing.models import AuditLog
     from apps.auditing import tasks as audit_tasks
+    from apps.auditing.models import AuditLog
 
     monkeypatch.setattr(audit_tasks, "_post_webhook", lambda url, payload: (200, "ok"))
 
