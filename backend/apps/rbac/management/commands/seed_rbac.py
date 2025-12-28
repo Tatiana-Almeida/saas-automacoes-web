@@ -84,14 +84,14 @@ class Command(BaseCommand):
                 if created:
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f'[{schema_name or "default"}] Created role: ADMIN'
+                            f"[{schema_name or 'default'}] Created role: ADMIN"
                         )
                     )
                 cliente_role, created = Role.objects.get_or_create(name="CLIENTE")
                 if created:
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f'[{schema_name or "default"}] Created role: CLIENTE'
+                            f"[{schema_name or 'default'}] Created role: CLIENTE"
                         )
                     )
 

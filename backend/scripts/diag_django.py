@@ -7,6 +7,7 @@ Usage:
   python scripts/diag_django.py --settings /path/to/settings.py --db "postgres://..."
 
 """
+
 import argparse
 import ast
 

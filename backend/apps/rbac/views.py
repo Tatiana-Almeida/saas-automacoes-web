@@ -417,7 +417,7 @@ class BulkRbacApplyView(APIView):
     )
     @swagger_auto_schema(
         operation_description=(
-            "Aplica operações RBAC em lote (atribuições e " "revogações)"
+            "Aplica operações RBAC em lote (atribuições e revogações)"
         ),
         request_body=BulkRbacOperationSerializer,
         responses={

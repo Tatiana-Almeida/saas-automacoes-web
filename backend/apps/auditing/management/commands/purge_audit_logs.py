@@ -66,6 +66,6 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Purged {total} audit logs (default {int(default_days)} days; overrides: { {k:int(v) for k,v in overrides.items()} })"
+                f"Purged {total} audit logs (default {int(default_days)} days; overrides: { {k: int(v) for k, v in overrides.items()} })"
             )
         )
