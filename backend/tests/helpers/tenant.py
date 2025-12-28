@@ -73,6 +73,45 @@ def create_tenant(
         except Exception:
             pass
 
+        # Shortcut for SQLite-based test DBs: sqlite does not support
+        # Postgres schemas and the helper's raw SQL paths. Create a
+        # Tenant via the ORM and return early to keep tests working on
+        # the lightweight sqlite in-memory DB used by `settings_test`.
+        if connection.vendor == "sqlite":
+            try:
+                # Attempt a simple ORM creation while ensuring public schema
+                try:
+                    connection.set_schema_to_public()
+                except Exception:
+                    pass
+                existing = Tenant.objects.filter(schema_name=schema_name).first()
+                if existing:
+                    tenant = existing
+                else:
+                    tenant = Tenant.objects.create(
+                        schema_name=schema_name,
+                        name=name or schema_name,
+                        plan=plan,
+                        is_active=True,
+                    )
+                # Ensure Domain entries exist
+                try:
+                    connection.set_schema_to_public()
+                except Exception:
+                    pass
+                Domain.objects.get_or_create(domain=domain, defaults={"tenant": tenant})
+                Domain.objects.get_or_create(
+                    domain=f"{domain}:80", defaults={"tenant": tenant}
+                )
+                # Register in-process registry for middleware
+                if register_in_process_registry:
+                    core_middleware.TEST_DOMAIN_REGISTRY[domain] = tenant
+                    core_middleware.TEST_DOMAIN_REGISTRY[f"{domain}:80"] = tenant
+                return tenant
+            except Exception:
+                # Fall back to full flow if ORM creation fails
+                pass
+
         # Wait briefly for the public tenants table to exist. In pytest's
         # test DB setup there can be a small window where the test database
         # has been created but migrations haven't finished on other threads

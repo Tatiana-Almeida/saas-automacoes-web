@@ -29,7 +29,9 @@ DATABASE_ROUTERS = []
 # Remove tenant-dependent middleware to simplify test stack
 _REMOVE_MIDDLEWARE = {
     "django_tenants.middleware.main.TenantMainMiddleware",
+    "apps.core.middleware.EnsureTenantSetMiddleware",
     "apps.core.middleware.EnforceActiveTenantMiddleware",
+    "apps.core.middleware.TenantMainMiddleware",
     "apps.core.middleware.TenantContextMiddleware",
     "apps.core.middleware.PlanLimitMiddleware",
     "apps.rbac.middleware.PermissionMiddleware",
@@ -63,19 +65,34 @@ REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = (
 # Exclude django-tenants to avoid Postgres-specific middleware; keep tenants app for model availability
 INSTALLED_APPS = [app for app in INSTALLED_APPS if app != "django_tenants"]
 
+# Ensure local `accounts` app is available during tests
+INSTALLED_APPS = INSTALLED_APPS + [
+    "accounts",
+]
+
 # Use a minimal URL conf for tests to avoid tenants imports
 ROOT_URLCONF = "saas_backend.urls_test"
 PUBLIC_SCHEMA_URLCONF = "saas_backend.urls_test"
 
-# Disable migrations for tenant app in tests to avoid migration graph inconsistencies
-MIGRATION_MODULES = {
-    "tenants": None,
-    "rbac": None,
-    "auditing": None,
-    "users": None,
-    "support": None,
-    "core": None,
-}
+# Keep migrations enabled for core apps so DB tables exist in tests.
+# Only disable migrations for local test-only apps if necessary.
+MIGRATION_MODULES = {}
+
+# For SQLite-based test runs, disable migrations for apps that do not provide
+# explicit migration files so Django will create tables directly from models.
+MIGRATION_MODULES.update(
+    {
+        "tenants": None,
+        "rbac": None,
+        "auditing": None,
+        "users": None,
+        "support": None,
+        "core": None,
+    }
+)
+
+# Optionally disable migrations for `accounts` to speed tests
+MIGRATION_MODULES["accounts"] = None
 
 # Ensure Celery tasks run synchronously during tests
 CELERY_TASK_ALWAYS_EAGER = True

@@ -66,6 +66,9 @@ urlpatterns = [
     path("api/v1/", include("apps.tenants.urls")),
     path("api/v1/", include("apps.rbac.urls")),
     path("api/v1/support/", include("apps.support.urls")),
+    path("api/v1/accounts/", include("accounts.urls")),
+    # Alternative auth-compatible routes (legacy/expected by some clients)
+    path("api/auth/", include("accounts.urls")),
     # Landing page
     path("", TemplateView.as_view(template_name="landing.html"), name="landing"),
 ]

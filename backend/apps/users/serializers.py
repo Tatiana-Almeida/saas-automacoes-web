@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions
@@ -5,6 +7,8 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import EmailVerificationToken
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -49,11 +53,16 @@ class RegisterSerializer(serializers.Serializer):
         # Create an email verification token (single-use). An actual
         # implementation would email this token to the user; for tests we
         # persist it so tests can look it up.
-        try:
-            EmailVerificationToken.objects.create(user=user)
-        except Exception:
-            # Avoid failing registration if token persistence is not available
-            pass
+        # Persist a verification token for the user. Let exceptions surface
+        # so tests fail loudly if token creation is not working.
+        token = EmailVerificationToken.objects.create(user=user)
+        logger.debug(
+            "created email verification token %s for user %s (token.user_id=%s user.pk=%s)",
+            token.token,
+            user.email,
+            getattr(token, "user_id", None),
+            getattr(user, "pk", None),
+        )
         return user
 
 
