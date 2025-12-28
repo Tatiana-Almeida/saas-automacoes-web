@@ -442,10 +442,8 @@ class WebhookReceiverView(APIView):
     @extend_schema(
         summary="Webhook receiver",
         description=(
-            "Generic webhook endpoint with HMAC-SHA256 signature verification.\n"
-            "Header `X-Signature` should contain the hex digest of HMAC(secret, raw_body).\n"
-            "Optional header `X-Timestamp` (unix seconds) validated against `WEBHOOK_MAX_SKEW_SECONDS`.\n"
-            "Secrets configured per provider in settings `WEBHOOK_SECRETS`."
+            "Generic webhook endpoint with HMAC-SHA256 signature verification. "
+            "Validates `X-Signature` and optional `X-Timestamp` headers."
         ),
         tags=["core"],
     )

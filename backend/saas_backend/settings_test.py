@@ -1,6 +1,7 @@
+# ruff: noqa: F405
 import os
 
-from .settings import *
+from .settings import *  # noqa: F403,F405
 
 # Use SQLite in-memory DB for tests to avoid Postgres driver
 DATABASES = {

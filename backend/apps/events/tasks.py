@@ -1,3 +1,4 @@
+# ruff: noqa: E501, B904
 from typing import Any, Dict
 
 from celery import shared_task

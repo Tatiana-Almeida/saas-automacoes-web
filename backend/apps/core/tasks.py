@@ -80,11 +80,15 @@ def _dispatch_alert(tenant, alert: dict):
             tenant_name = getattr(tenant, "name", None) or getattr(
                 tenant, "schema_name", "unknown"
             )
-            subject = f"[SaaS] Uso diário perto do limite: {alert.get('category')} ({tenant_name})"
+            subject = (
+                f"[SaaS] Uso diário perto do limite: {alert.get('category')} "
+                f"({tenant_name})"
+            )
             body = (
                 f"Tenant: {tenant_name}\n"
                 f"Categoria: {alert.get('category')}\n"
-                f"Usado hoje: {alert.get('used')} de {alert.get('limit')} ({alert.get('percent_used')}%)\n"
+                f"Usado hoje: {alert.get('used')} de {alert.get('limit')} "
+                f"({alert.get('percent_used')}%)\n"
             )
             # fire-and-forget via Celery
             send_email_message.delay(to_email, subject, body)

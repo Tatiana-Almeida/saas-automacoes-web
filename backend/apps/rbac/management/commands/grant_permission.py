@@ -38,8 +38,8 @@ class Command(BaseCommand):
             return self.stdout.write(self.style.ERROR("Tenant não encontrado"))
 
         UserPermission.objects.get_or_create(user=user, permission=perm, tenant=tenant)
-        return self.stdout.write(
-            self.style.SUCCESS(
-                f'Permissão "{perm_code}" concedida ao usuário "{username}" no tenant "{tenant_schema}"'
-            )
+        msg = (
+            f'Permissão "{perm_code}" concedida ao usuário "{username}" '
+            f'no tenant "{tenant_schema}"'
         )
+        return self.stdout.write(self.style.SUCCESS(msg))

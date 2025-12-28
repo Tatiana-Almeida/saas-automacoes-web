@@ -1,3 +1,38 @@
+# SAAS DE AUTOMA9600000 Web — README
+
+## Creating tenants in local development
+
+Use the test settings which use the fast SQLite test profile when running tests or doing local development work.
+
+PowerShell example (Windows):
+
+```powershell
+Set-Location 'C:\Users\Tatiana Almeida\Documents\SAAS\SAAS DE AUTOMAÇÕES WEB\backend'
+$env:PYTHONPATH = 'C:\Users\Tatiana Almeida\Documents\SAAS\SAAS DE AUTOMAÇÕES WEB'
+$env:DJANGO_SETTINGS_MODULE = 'saas_backend.settings_test'
+python manage.py migrate --settings=saas_backend.settings_test
+python manage.py migrate_schemas --shared --settings=saas_backend.settings_test
+# then open a shell to create tenants from the helper
+python manage.py shell --settings=saas_backend.settings_test
+>>> from apps.tenants.helpers import create_tenant
+>>> create_tenant(schema_name='tenant1', domain='tenant1.localhost')
+```
+
+Bash / macOS example:
+
+```bash
+cd ~/path/to/SAAS\ DE\ AUTOMA9\.../backend
+export PYTHONPATH=/full/path/to/SAAS\ DE\ AUTOMA9\.../
+export DJANGO_SETTINGS_MODULE=saas_backend.settings_test
+python manage.py migrate --settings=saas_backend.settings_test
+python manage.py migrate_schemas --shared --settings=saas_backend.settings_test
+python manage.py shell --settings=saas_backend.settings_test
+# then from the shell run the create_tenant helper
+```
+
+Notes:
+- In production we use Postgres and per-tenant schemas; the `create_tenant` helper will run migrations when required in that environment.
+- The `X-Tenant-Host` header is used by the dev frontend and the test fixtures to simulate tenant-scoped requests.
 # SAAS de Automações Web — Desenvolvimento Local
 
 Este documento descreve passo a passo como levantar o projeto localmente, executar testes e trabalhar com tenants em um ambiente multi-tenant por host. As instruções são explícitas e copiáveis para Windows, macOS e Linux.

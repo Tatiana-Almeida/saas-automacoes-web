@@ -1,3 +1,5 @@
+"""Utility to create an admin user for local development/tests."""
+# ruff: noqa: E402
 import os
 
 import django

@@ -5,7 +5,7 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "saas_backend.settings")
 django.setup()
 
-from apps.tenants.models import Domain, Tenant
+from apps.tenants.models import Domain, Tenant  # noqa: E402
 
 # Check if public tenant exists
 t = Tenant.objects.filter(schema_name="public").first()

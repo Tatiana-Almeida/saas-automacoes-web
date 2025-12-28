@@ -39,9 +39,9 @@ class Command(BaseCommand):
             user=user, role=role, tenant=tenant
         ).delete()
         if deleted:
-            return self.stdout.write(
-                self.style.SUCCESS(
-                    f'Role "{role_name}" revogada do usuário "{username}" no tenant "{tenant_schema}"'
-                )
+            msg = (
+                f'Role "{role_name}" revogada do usuário "{username}" '
+                f'no tenant "{tenant_schema}"'
             )
+            return self.stdout.write(self.style.SUCCESS(msg))
         return self.stdout.write("Nada para revogar")

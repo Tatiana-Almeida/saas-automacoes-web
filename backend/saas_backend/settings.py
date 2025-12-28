@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+import sys
+from datetime import timedelta
 
 import environ
 
@@ -23,7 +25,6 @@ ALLOWED_HOSTS = [
 # During test runs (pytest) allow all hosts to avoid DisallowedHost when
 # tests use custom domain names like 'tenant.localhost'. We detect pytest
 # via sys.argv which is sufficient for our test invocation path used here.
-import sys
 
 try:
     if any("pytest" in str(a) for a in sys.argv):
@@ -224,8 +225,6 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "v1",
     "SERVE_INCLUDE_SCHEMA": False,
 }
-
-from datetime import timedelta
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),

@@ -46,9 +46,9 @@ def test_assign_and_list_user_permission(client, gen_password, create_tenant):
     assert a.json()["permission"] == "send_whatsapp"
 
     # List permissions for target
-    l = client.get(f"/api/v1/rbac/users/{target.id}/permissions", HTTP_HOST=d.domain)
-    assert l.status_code == 200
-    perms = [p["permission"] for p in l.json()]
+    resp = client.get(f"/api/v1/rbac/users/{target.id}/permissions", HTTP_HOST=d.domain)
+    assert resp.status_code == 200
+    perms = [p["permission"] for p in resp.json()]
     assert "send_whatsapp" in perms
 
 
@@ -89,9 +89,9 @@ def test_revoke_user_permission(client, gen_password, create_tenant):
     assert r.status_code == 204
 
     # Verify removal
-    l = client.get(f"/api/v1/rbac/users/{target.id}/permissions", HTTP_HOST=d.domain)
-    assert l.status_code == 200
-    perms = [p["permission"] for p in l.json()]
+    resp = client.get(f"/api/v1/rbac/users/{target.id}/permissions", HTTP_HOST=d.domain)
+    assert resp.status_code == 200
+    perms = [p["permission"] for p in resp.json()]
     assert "send_email" not in perms
 
 

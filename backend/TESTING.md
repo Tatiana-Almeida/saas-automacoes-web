@@ -12,7 +12,9 @@ Why
 What to know
 - The `rbac` models will auto-assign a lightweight `Tenant` when `settings.TESTING`
   is true and no tenant is present. This avoids `NOT NULL` constraint failures
-  in SQLite test runs.
+  in SQLite test runs. The fallback behavior is centralized in
+  `apps.tenants.test_helpers.get_or_create_test_tenant()`; model-level code
+  should call that helper rather than duplicating creation logic.
 - `EmailVerificationToken` creation logs were reduced to DEBUG to keep test output
   clean; token creation still raises on errors so tests fail loudly when issues
   happen.

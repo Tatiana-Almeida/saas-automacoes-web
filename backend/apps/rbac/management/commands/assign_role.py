@@ -36,8 +36,8 @@ class Command(BaseCommand):
             return self.stdout.write(self.style.ERROR("Tenant não encontrado"))
 
         UserRole.objects.get_or_create(user=user, role=role, tenant=tenant)
-        return self.stdout.write(
-            self.style.SUCCESS(
-                f'Role "{role_name}" atribuída ao usuário "{username}" no tenant "{tenant_schema}"'
-            )
+        msg = (
+            f'Role "{role_name}" atribuída ao usuário "{username}" '
+            f'no tenant "{tenant_schema}"'
         )
+        return self.stdout.write(self.style.SUCCESS(msg))

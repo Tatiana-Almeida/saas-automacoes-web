@@ -1,3 +1,4 @@
+# ruff: noqa: E501, C901
 try:
     # module import marker for test-time debug
     pass
@@ -409,7 +410,7 @@ def EnsureTenantSetMiddleware(get_response):
 
 
 def RequestDebugMiddleware(get_response):
-    """Lightweight middleware to log host, resolved host, tenant and schema for debugging tests."""
+    """Log host, resolved host, tenant and schema for debug tests."""
 
     def middleware(request):
         response = None
@@ -435,12 +436,11 @@ def RequestDebugMiddleware(get_response):
                 schema = None
             # Log pre-dispatch routing info
             logger.info(
-                "RequestDebugMiddleware PRE host=%s resolved=%s tenant=%s schema=%s path=%s",
+                "ReqDebug PRE host=%s resolved=%s tenant=%s schema=%s",
                 host,
                 resolved,
                 getattr(tenant, "schema_name", None) if tenant else None,
                 schema,
-                getattr(request, "path", None),
             )
             try:
                 # Also print to stdout so pytest captures immediately
@@ -508,7 +508,7 @@ def RequestDebugMiddleware(get_response):
                 except Exception:
                     schema = None
                 logger.info(
-                    "RequestDebugMiddleware POST resolver_match=%s tenant=%s schema=%s response_status=%s",
+                    "ReqDebug POST rm=%s tenant=%s schema=%s status=%s",
                     rm_name,
                     getattr(getattr(request, "tenant", None), "schema_name", None),
                     schema,

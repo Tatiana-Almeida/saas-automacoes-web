@@ -1,4 +1,5 @@
-from .settings import *
+# ruff: noqa: F405
+from .settings import *  # noqa: F403,F405
 
 # Postgres test DB config (override via env if needed)
 DATABASES = {

@@ -1,0 +1,4 @@
+ignore = ["E501", "C901"]
+
+# Temporarily ignore long lines and overly-complex-function rules (project-wide)
+

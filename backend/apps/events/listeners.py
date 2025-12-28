@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 from typing import Any, Dict
 
 from apps.auditing.models import AuditLog

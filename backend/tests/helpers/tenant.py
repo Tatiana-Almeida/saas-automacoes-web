@@ -23,6 +23,7 @@ from tests.utils.db_lock import advisory_lock, set_search_path_on_cursor
 # Event set by the session fixture when shared/public migrations have been applied.
 MIGRATIONS_READY = threading.Event()
 
+# ruff: noqa: E402, C901
 from apps.core import middleware as core_middleware
 from apps.tenants.models import Domain, Tenant
 from django.core.management import call_command

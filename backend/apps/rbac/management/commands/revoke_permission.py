@@ -41,9 +41,9 @@ class Command(BaseCommand):
             user=user, permission=perm, tenant=tenant
         ).delete()
         if deleted:
-            return self.stdout.write(
-                self.style.SUCCESS(
-                    f'Permissão "{perm_code}" revogada do usuário "{username}" no tenant "{tenant_schema}"'
-                )
+            msg = (
+                f'Permissão "{perm_code}" revogada do usuário "{username}" '
+                f'no tenant "{tenant_schema}"'
             )
+            return self.stdout.write(self.style.SUCCESS(msg))
         return self.stdout.write("Nada para revogar")

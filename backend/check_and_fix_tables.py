@@ -1,9 +1,10 @@
-import os
 
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "saas_backend.settings")
+
+# ruff: noqa: E402, E501
 django.setup()
+
 
 from django.db import connection
 from django_tenants.utils import schema_context

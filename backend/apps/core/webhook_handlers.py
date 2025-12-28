@@ -14,7 +14,7 @@ def _idempotency_key(provider: str, event_id: str) -> str:
 
 
 def check_and_mark_idempotent(provider: str, event_id: Optional[str]) -> bool:
-    """Returns True if this is the first time we see the event and marks it; False if seen."""
+    """Return True if first-seen and mark the event; False if already seen."""
     if not event_id:
         # If no event_id, we cannot guarantee idempotency; treat as first time
         return True
@@ -43,7 +43,7 @@ def dispatch_webhook(
     tenant_schema: Optional[str] = None,
     tenant_id: Optional[int] = None,
 ) -> None:
-    """Dispatches webhook to provider-specific handlers, emitting events where applicable."""
+    """Dispatch webhook to provider handlers and emit events."""
     try:
         if provider == "stripe":
             evt_type = payload.get("type")
